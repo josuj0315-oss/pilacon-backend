@@ -1,0 +1,53 @@
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToOne, JoinColumn, ManyToOne, OneToMany, Unique } from 'typeorm';
+import { Application } from '../../applications/application.entity';
+import { Job } from '../../jobs/job.entity';
+import { User } from '../../users/user.entity';
+import { ChatParticipant } from './chat-participant.entity';
+import { ChatMessage } from './chat-message.entity';
+
+@Entity('chat_room')
+@Unique(['instructorId', 'centerId'])
+export class ChatRoom {
+    @PrimaryGeneratedColumn()
+    id: number;
+
+    @Column()
+    applicationId: number;
+
+    @OneToOne(() => Application, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'applicationId' })
+    application: Application;
+
+    @Column()
+    jobId: number;
+
+    @ManyToOne(() => Job, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'jobId' })
+    job: Job;
+
+    @Column({ nullable: true })
+    instructorId: number;
+
+    @ManyToOne(() => User, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'instructorId' })
+    instructor: User;
+
+    @Column({ nullable: true })
+    centerId: number;
+
+    @ManyToOne(() => User, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'centerId' })
+    center: User;
+
+    @CreateDateColumn()
+    createdAt: Date;
+
+    @Column({ nullable: true })
+    lastMessageAt: Date;
+
+    @OneToMany(() => ChatParticipant, (participant) => participant.room)
+    participants: ChatParticipant[];
+
+    @OneToMany(() => ChatMessage, (message) => message.room)
+    messages: ChatMessage[];
+}

@@ -1,0 +1,1 @@
+ALTER TABLE instructor_profile MODIFY resume_url TEXT; ALTER TABLE instructor_profile MODIFY activity_url TEXT; ALTER TABLE instructor_profile MODIFY pdf_url TEXT; ALTER TABLE instructor_profile MODIFY portfolio_url TEXT;
