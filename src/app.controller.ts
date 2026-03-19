@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
+import * as Sentry from '@sentry/nestjs';
 
 @Controller()
 export class AppController {
@@ -13,6 +14,8 @@ export class AppController {
   // 배포 Sentry 연동 확인용 임시 라우트 (운영 확인 후 즉시 본 메서드 제거 요망)
   @Get('sentry-test')
   testSentry(): never {
-    throw new Error('Production backend test');
+    const error = new Error('Production backend test');
+    Sentry.captureException(error);
+    throw error;
   }
 }
