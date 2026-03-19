@@ -23,6 +23,15 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
         });
     }
 
+    authenticate(req: any, options: any) {
+        const callbackURL = options?.callbackURL || (this as any)._callbackURL;
+        console.log('========== [KaKao Auth Request] ==========');
+        console.log('1. Requested Host:', req.headers?.host || 'Unknown');
+        console.log('2. Callback URL sent to Kakao:', callbackURL);
+        console.log('==========================================');
+        super.authenticate(req, options);
+    }
+
     async validate(accessToken: string, refreshToken: string, profile: any, done: any) {
         const { id, username, _json } = profile;
         const user = {
