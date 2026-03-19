@@ -35,7 +35,18 @@ export class AuthController {
     async kakaoCallback(@Req() req, @Res() res) {
         const user: any = await this.authService.validateUser(req.user);
         const token = this.authService.generateJwt(user);
-        const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+        
+        // Use FRONTEND_URL from env, fallback to production URL if missing, and remove trailing slash
+        let frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://pilacon-frontend.vercel.app';
+        
+        // **강제 수정**: 기존 Railway 환경변수에 'pilacon.vercel.app' 등 예전 주소가 남아있을 수 있으므로 강제 덮어쓰기
+        if (frontendUrl.includes('vercel.app')) {
+            frontendUrl = 'https://pilacon-frontend.vercel.app';
+        }
+        
+        frontendUrl = frontendUrl.replace(/\/$/, '');
+
+        console.log(`[Kakao Login Success] Redirecting to: ${frontendUrl}/login`);
         res.redirect(`${frontendUrl}/login?token=${token}`);
     }
 
@@ -50,7 +61,18 @@ export class AuthController {
     async naverCallback(@Req() req, @Res() res) {
         const user: any = await this.authService.validateUser(req.user);
         const token = this.authService.generateJwt(user);
-        const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+        
+        // Use FRONTEND_URL from env, fallback to production URL if missing, and remove trailing slash
+        let frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://pilacon-frontend.vercel.app';
+        
+        // **강제 수정**: 기존 Railway 환경변수에 'pilacon.vercel.app' 등 예전 주소가 남아있을 수 있으므로 강제 덮어쓰기
+        if (frontendUrl.includes('vercel.app')) {
+            frontendUrl = 'https://pilacon-frontend.vercel.app';
+        }
+        
+        frontendUrl = frontendUrl.replace(/\/$/, '');
+
+        console.log(`[Naver Login Success] Redirecting to: ${frontendUrl}/login`);
         res.redirect(`${frontendUrl}/login?token=${token}`);
     }
 
