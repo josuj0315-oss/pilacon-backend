@@ -47,7 +47,7 @@ export class AuthController {
         frontendUrl = frontendUrl.replace(/\/$/, '');
 
         console.log(`[Kakao Login Success] Redirecting to: ${frontendUrl}/login`);
-        res.redirect(`${frontendUrl}/login?token=${token}`);
+        res.redirect(`${frontendUrl}/login?accessToken=${token}`);
     }
 
     @Get('naver')
@@ -73,7 +73,7 @@ export class AuthController {
         frontendUrl = frontendUrl.replace(/\/$/, '');
 
         console.log(`[Naver Login Success] Redirecting to: ${frontendUrl}/login`);
-        res.redirect(`${frontendUrl}/login?token=${token}`);
+        res.redirect(`${frontendUrl}/login?accessToken=${token}`);
     }
 
     @Get('me')
