@@ -23,16 +23,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
   app.enableCors({
-    origin: (origin, callback) => {
-      // origin이 없는 경우(서버간 통신 등) 또는 화이트리스트 검사
-      if (!origin || /localhost:(3000|5173)$/.test(origin) || /https:\/\/pilacon-frontend.*\.vercel\.app$/.test(origin)) {
-        callback(null, true);
-      } else {
-        callback(null, false);
-      }
-    },
+    origin: true, // true allows any origin
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type,Accept,Authorization,X-Requested-With,Origin,X-Requested-With,Accept-Encoding,Accept-Language,Connection,Host,Referer,User-Agent',
+    allowedHeaders: '*', // Allow all headers
     credentials: true,
   });
   
