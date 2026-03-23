@@ -24,16 +24,21 @@ import { UploadModule } from './upload/upload.module';
     ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'mysql',
-        host: configService.get<string>('DB_HOST'),
-        port: configService.get<number>('DB_PORT'),
-        username: configService.get<string>('DB_USERNAME'),
-        password: configService.get<string>('DB_PASSWORD'),
-        database: configService.get<string>('DB_DATABASE'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const host = configService.get<string>('DB_HOST') || '';
+        const isRds = host.includes('rds.amazonaws.com');
+        return {
+          type: 'mysql',
+          host: host,
+          port: configService.get<number>('DB_PORT'),
+          username: configService.get<string>('DB_USERNAME'),
+          password: configService.get<string>('DB_PASSWORD'),
+          database: configService.get<string>('DB_DATABASE'),
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: true, // 주의: 프로덕션에서는 false로 설정하고 migration을 사용하는 것이 좋습니다.
+          ssl: isRds ? { rejectUnauthorized: false } : false,
+        };
+      },
       inject: [ConfigService],
     }),
     JobsModule,

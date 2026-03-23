@@ -22,11 +22,14 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
   app.enableCors({
-    origin: [
-      'https://pilacon-frontend.vercel.app',
-      'http://localhost:3000',
-      'http://localhost:5173', // Vite default port
-    ],
+    origin: (origin, callback) => {
+      // origin이 없는 경우(서버간 통신 등) 또는 화이트리스트 검사
+      if (!origin || /localhost:(3000|5173)$/.test(origin) || /https:\/\/pilacon-frontend.*\.vercel\.app$/.test(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type,Accept,Authorization,X-Requested-With,Origin,X-Requested-With,Accept-Encoding,Accept-Language,Connection,Host,Referer,User-Agent',
     credentials: true,
@@ -36,6 +39,6 @@ async function bootstrap() {
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.useGlobalFilters(new SentryFilter(httpAdapter));
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT || 3000, '0.0.0.0');
 }
 bootstrap();
