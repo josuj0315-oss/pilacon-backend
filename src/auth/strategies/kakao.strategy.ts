@@ -7,7 +7,7 @@ import { ConfigService } from '@nestjs/config';
 export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
     constructor(configService: ConfigService) {
         const clientID = configService.get<string>('KAKAO_CLIENT_ID') || 'MISSING_CLIENT_ID';
-        const clientSecret = configService.get<string>('KAKAO_CLIENT_SECRET') || '';
+        const clientSecret = configService.get<string>('KAKAO_CLIENT_SECRET') || 'MISSING_CLIENT_SECRET';
         const callbackURL = configService.get<string>('KAKAO_CALLBACK_URL') || 'http://localhost:3000/auth/kakao/callback';
 
         console.log('--- Kakao Config Start ---');

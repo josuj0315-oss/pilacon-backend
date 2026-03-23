@@ -7,7 +7,7 @@ import { ConfigService } from '@nestjs/config';
 export class NaverStrategy extends PassportStrategy(Strategy, 'naver') {
     constructor(configService: ConfigService) {
         const clientID = configService.get<string>('NAVER_CLIENT_ID') || 'MISSING_CLIENT_ID';
-        const clientSecret = configService.get<string>('NAVER_CLIENT_SECRET') || '';
+        const clientSecret = configService.get<string>('NAVER_CLIENT_SECRET') || 'MISSING_CLIENT_SECRET';
         const callbackURL = configService.get<string>('NAVER_CALLBACK_URL') || 'http://localhost:3000/auth/naver/callback';
 
         super({
