@@ -6,28 +6,11 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class NaverStrategy extends PassportStrategy(Strategy, 'naver') {
     constructor(configService: ConfigService) {
-        const clientID = configService.get<string>('NAVER_CLIENT_ID') || 'MISSING_CLIENT_ID';
-        const clientSecret = configService.get<string>('NAVER_CLIENT_SECRET') || 'MISSING_CLIENT_SECRET';
-        const callbackURL = configService.get<string>('NAVER_CALLBACK_URL') || 'http://localhost:3000/auth/naver/callback';
-
         super({
-            clientID,
-            clientSecret,
-            callbackURL,
+            clientID: configService.get<string>('NAVER_CLIENT_ID'),
+            clientSecret: configService.get<string>('NAVER_CLIENT_SECRET'),
+            callbackURL: configService.get<string>('NAVER_CALLBACK_URL'),
         });
-    }
-
-    authenticate(req: any, options: any) {
-        try {
-            const clientID = (this as any)._oauth2?._clientId || (this as any)._clientId;
-            if (clientID === 'MISSING_CLIENT_ID') {
-                return this.error(new Error('NAVER_CLIENT_ID is not configured in environment variables.'));
-            }
-            super.authenticate(req, options);
-        } catch (err) {
-            console.error('Exception in NaverStrategy.authenticate:', err);
-            this.error(err);
-        }
     }
 
     async validate(accessToken: string, refreshToken: string, profile: any, done: any) {

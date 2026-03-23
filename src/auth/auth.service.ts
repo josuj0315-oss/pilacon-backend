@@ -62,16 +62,7 @@ export class AuthService {
         const { username, password } = details;
         const user = await this.userRepository.findOneBy({ username });
 
-        if (!user) {
-            throw new UnauthorizedException('아이디 또는 비밀번호가 올바르지 않습니다.');
-        }
-
-        if (user.provider !== 'local') {
-            const providerName = user.provider === 'kakao' ? '카카오' : user.provider === 'naver' ? '네이버' : user.provider;
-            throw new UnauthorizedException(`이 계정은 ${providerName} 소셜 로그인으로 가입되었습니다. 해당 소셜 로그인을 이용해주세요.`);
-        }
-
-        if (!user.password) {
+        if (!user || !user.password) {
             throw new UnauthorizedException('아이디 또는 비밀번호가 올바르지 않습니다.');
         }
 

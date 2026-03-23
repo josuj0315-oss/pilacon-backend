@@ -6,9 +6,9 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
     constructor(configService: ConfigService) {
-        const clientID = configService.get<string>('KAKAO_CLIENT_ID') || 'MISSING_CLIENT_ID';
-        const clientSecret = configService.get<string>('KAKAO_CLIENT_SECRET') || 'MISSING_CLIENT_SECRET';
-        const callbackURL = configService.get<string>('KAKAO_CALLBACK_URL') || 'http://localhost:3000/auth/kakao/callback';
+        const clientID = configService.get<string>('KAKAO_CLIENT_ID');
+        const clientSecret = configService.get<string>('KAKAO_CLIENT_SECRET');
+        const callbackURL = configService.get<string>('KAKAO_CALLBACK_URL');
 
         console.log('--- Kakao Config Start ---');
         console.log('ClientID:', clientID);
@@ -17,29 +17,19 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
         console.log('--- Kakao Config End ---');
 
         super({
-            clientID,
-            clientSecret,
-            callbackURL,
+            clientID: clientID!,
+            clientSecret: clientSecret,
+            callbackURL: callbackURL!,
         });
     }
 
     authenticate(req: any, options: any) {
-        try {
-            const clientID = (this as any)._oauth2?._clientId || (this as any)._clientId;
-            if (clientID === 'MISSING_CLIENT_ID') {
-                return this.error(new Error('KAKAO_CLIENT_ID is not configured in environment variables.'));
-            }
-
-            const callbackURL = options?.callbackURL || (this as any)._callbackURL;
-            console.log('========== [KaKao Auth Request] ==========');
-            console.log('1. Requested Host:', req.headers?.host || 'Unknown');
-            console.log('2. Callback URL sent to Kakao:', callbackURL);
-            console.log('==========================================');
-            super.authenticate(req, options);
-        } catch (err) {
-            console.error('Exception in KakaoStrategy.authenticate:', err);
-            this.error(err);
-        }
+        const callbackURL = options?.callbackURL || (this as any)._callbackURL;
+        console.log('========== [KaKao Auth Request] ==========');
+        console.log('1. Requested Host:', req.headers?.host || 'Unknown');
+        console.log('2. Callback URL sent to Kakao:', callbackURL);
+        console.log('==========================================');
+        super.authenticate(req, options);
     }
 
     async validate(accessToken: string, refreshToken: string, profile: any, done: any) {
