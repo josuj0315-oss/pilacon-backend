@@ -73,22 +73,22 @@ export class Job {
     centerId: number;
 
     @Column({ type: 'varchar', nullable: true })
-    centerTempName: string | null;
+    centerTempName: string;
 
     @Column({ type: 'varchar', nullable: true })
-    centerTempBusinessName: string | null;
+    centerTempBusinessName: string;
 
     @Column({ type: 'varchar', nullable: true })
-    centerTempAddress: string | null;
+    centerTempAddress: string;
 
     @Column({ type: 'varchar', nullable: true })
-    centerTempAddressDetail: string | null;
+    centerTempAddressDetail: string;
 
     @Column({ type: 'varchar', nullable: true })
-    centerTempPhone: string | null;
+    centerTempPhone: string;
 
     @Column({ type: 'text', nullable: true })
-    centerTempEquipment: string | null;
+    centerTempEquipment: string;
 
     @Column({ type: 'text', nullable: true })
     description: string;

@@ -40,8 +40,8 @@ export class User {
     @Column({ nullable: true })
     profileImage: string;
 
-    @Column({ nullable: true })
-    hashedRefreshToken: string | null;
+    @Column({ type: 'varchar', nullable: true })
+    hashedRefreshToken: string;
 
     @OneToMany(() => InstructorProfile, (profile) => profile.user)
     instructorProfiles: InstructorProfile[];

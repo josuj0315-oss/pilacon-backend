@@ -43,13 +43,13 @@ export class Application {
     isViewed: boolean;
 
     @Column({ type: 'timestamp', nullable: true })
-    viewedAt: Date | null;
+    viewedAt: Date;
 
     @Column({ type: 'text', nullable: true })
-    cancelReason: string | null;
+    cancelReason: string;
 
     @Column({ type: 'text', nullable: true })
-    cancelReasonDetail: string | null;
+    cancelReasonDetail: string;
 
 
     @CreateDateColumn()
