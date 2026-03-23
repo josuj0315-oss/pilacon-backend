@@ -52,12 +52,12 @@ export class JobsService {
 
     async create(userId: number, jobData: Partial<Job>): Promise<Job> {
         if (jobData.centerId) {
-            jobData.centerTempName = null;
-            jobData.centerTempBusinessName = null;
-            jobData.centerTempAddress = null;
-            jobData.centerTempAddressDetail = null;
-            jobData.centerTempPhone = null;
-            jobData.centerTempEquipment = null;
+            jobData.centerTempName = null as any;
+            jobData.centerTempBusinessName = null as any;
+            jobData.centerTempAddress = null as any;
+            jobData.centerTempAddressDetail = null as any;
+            jobData.centerTempPhone = null as any;
+            jobData.centerTempEquipment = null as any;
         } else if (!jobData.centerTempName) {
             jobData.centerTempName = '미등록 센터';
         }
@@ -101,12 +101,12 @@ export class JobsService {
         });
 
         if (job.centerId) {
-            job.centerTempName = null;
-            job.centerTempBusinessName = null;
-            job.centerTempAddress = null;
-            job.centerTempAddressDetail = null;
-            job.centerTempPhone = null;
-            job.centerTempEquipment = null;
+            job.centerTempName = null as any;
+            job.centerTempBusinessName = null as any;
+            job.centerTempAddress = null as any;
+            job.centerTempAddressDetail = null as any;
+            job.centerTempPhone = null as any;
+            job.centerTempEquipment = null as any;
         } else if (!job.centerTempName) {
             job.centerTempName = '미등록 센터';
         }

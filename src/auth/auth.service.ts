@@ -91,7 +91,7 @@ export class AuthService {
     }
 
     async removeRefreshToken(userId: number) {
-        await this.userRepository.update(userId, { hashedRefreshToken: null });
+        await this.userRepository.update(userId, { hashedRefreshToken: null } as any);
     }
 
     async refreshTokens(refreshToken: string) {
