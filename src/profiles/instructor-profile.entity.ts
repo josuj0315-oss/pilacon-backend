@@ -16,37 +16,37 @@ export class InstructorProfile {
     @Column({ name: 'is_primary', type: 'tinyint', width: 1, default: 0 })
     isPrimary: boolean;
 
-    @Column({ nullable: true })
-    title: string | null;
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    title: string;
 
-    @Column({ nullable: true })
-    intro: string | null;
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    intro: string;
 
-    @Column({ nullable: true })
-    experience: string | null;
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    experience: string;
 
-    @Column({ nullable: true })
-    specialty: string | null;
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    specialty: string;
 
     // sub 전용
     @Column({ type: 'text', nullable: true })
-    message: string | null;
+    message: string;
 
     @Column({ name: 'resume_url', type: 'text', nullable: true })
-    resumeUrl: string | null;
+    resumeUrl: string;
 
     @Column({ name: 'activity_url', type: 'text', nullable: true })
-    activityUrl: string | null;
+    activityUrl: string;
 
     // regular 전용
     @Column({ name: 'detail_intro', type: 'text', nullable: true })
-    detailIntro: string | null;
+    detailIntro: string;
 
     @Column({ name: 'pdf_url', type: 'text', nullable: true })
-    pdfUrl: string | null;
+    pdfUrl: string;
 
     @Column({ name: 'portfolio_url', type: 'text', nullable: true })
-    portfolioUrl: string | null;
+    portfolioUrl: string;
 
     @ManyToOne(() => User, (user) => user.instructorProfiles, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'user_id' })

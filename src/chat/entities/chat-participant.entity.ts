@@ -22,7 +22,7 @@ export class ChatParticipant {
     @Column()
     userId: number;
 
-    @Column({ nullable: true })
+    @Column({ type: 'varchar', length: 255, nullable: true })
     role: string | null; // 'center' | 'instructor'
 
     @CreateDateColumn()

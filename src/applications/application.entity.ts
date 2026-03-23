@@ -30,8 +30,8 @@ export class Application {
     @JoinColumn({ name: 'instructorProfileId' })
     instructorProfile: InstructorProfile;
 
-    @Column({ nullable: true })
-    instructorProfileId: number;
+    @Column({ type: 'int', nullable: true })
+    instructorProfileId: number | null;
 
     @Column({ type: 'text', nullable: true })
     message: string | null;

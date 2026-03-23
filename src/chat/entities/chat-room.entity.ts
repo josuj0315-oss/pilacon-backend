@@ -25,14 +25,14 @@ export class ChatRoom {
     @JoinColumn({ name: 'jobId' })
     job: Job;
 
-    @Column({ nullable: true })
+    @Column({ type: 'int', nullable: true })
     instructorId: number | null;
 
     @ManyToOne(() => User, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'instructorId' })
     instructor: User | null;
 
-    @Column({ nullable: true })
+    @Column({ type: 'int', nullable: true })
     centerId: number | null;
 
     @ManyToOne(() => User, { onDelete: 'CASCADE' })
@@ -42,7 +42,7 @@ export class ChatRoom {
     @CreateDateColumn()
     createdAt: Date;
 
-    @Column({ nullable: true })
+    @Column({ type: 'timestamp', nullable: true })
     lastMessageAt: Date | null;
 
     @OneToMany(() => ChatParticipant, (participant) => participant.room)

@@ -10,38 +10,38 @@ export class User {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({ unique: true, nullable: true })
-    username: string | null;
+    @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
+    username: string;
 
-    @Column({ nullable: true })
-    password: string | null;
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    password: string;
 
-    @Column({ nullable: true })
-    nickname: string | null;
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    nickname: string;
 
-    @Column({ unique: true, nullable: true })
-    socialId: string | null;
+    @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
+    socialId: string;
 
-    @Column({ nullable: true })
-    provider: string | null; // 'kakao' | 'naver' | 'local'
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    provider: string; // 'kakao' | 'naver' | 'local'
 
-    @Column({ nullable: true })
-    name: string | null;
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    name: string;
 
-    @Column({ nullable: true })
-    email: string | null;
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    email: string;
 
-    @Column({ nullable: true })
-    phone: string | null;
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    phone: string;
 
     @Column({ default: false })
     marketingAgree: boolean;
 
-    @Column({ nullable: true })
-    profileImage: string | null;
+    @Column({ type: 'text', nullable: true })
+    profileImage: string;
 
-    @Column({ type: 'varchar', nullable: true })
-    hashedRefreshToken: string | null;
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    hashedRefreshToken: string;
 
     @OneToMany(() => InstructorProfile, (profile) => profile.user)
     instructorProfiles: InstructorProfile[];

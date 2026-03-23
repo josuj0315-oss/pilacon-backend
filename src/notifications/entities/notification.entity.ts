@@ -39,13 +39,13 @@ export class Notification {
     @Column()
     body: string;
 
-    @Column({ nullable: true })
+    @Column({ type: 'varchar', length: 255, nullable: true })
     deepLink: string | null;
 
-    @Column({ nullable: true })
+    @Column({ type: 'varchar', length: 255, nullable: true })
     resourceType: string | null; // JOB, APPLICATION, CHAT 등
 
-    @Column({ nullable: true })
+    @Column({ type: 'int', nullable: true })
     resourceId: number | null;
 
     @Column({ default: false })
@@ -54,6 +54,6 @@ export class Notification {
     @CreateDateColumn()
     createdAt: Date;
 
-    @Column({ nullable: true })
+    @Column({ type: 'timestamp', nullable: true })
     readAt: Date | null;
 }

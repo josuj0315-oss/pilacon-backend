@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import * as Sentry from '@sentry/nestjs';
 // [유지해야 할 코드] Sentry 초기화 - 앱 시작 시 가장 먼저 실행되어야 합니다.
 Sentry.init({

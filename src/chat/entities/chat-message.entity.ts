@@ -25,13 +25,13 @@ export class ChatMessage {
     @Column({ type: 'text' })
     content: string;
 
-    @Column({ type: 'varchar', default: 'text' })
+    @Column({ type: 'varchar', length: 255, default: 'text' })
     type: string;
 
-    @Column({ type: 'varchar', nullable: true })
+    @Column({ type: 'varchar', length: 255, nullable: true })
     imageUrl: string | null;
 
-    @Column({ type: 'varchar', nullable: true })
+    @Column({ type: 'varchar', length: 255, nullable: true })
     imageKey: string | null;
 
     @CreateDateColumn()
