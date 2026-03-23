@@ -21,14 +21,21 @@ export class SentryFilter extends BaseExceptionFilter {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   app.enableCors({
     origin: true, // true allows any origin
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: '*', // Allow all headers
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'cache-control',
+      'X-Requested-With',
+      'Accept',
+      'Origin'
+    ],
     credentials: true,
   });
-  
+
   // 글로벌 에러 핸들러 연결 (모든 예외를 Sentry로 강력하게 수집 보장)
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.useGlobalFilters(new SentryFilter(httpAdapter));
