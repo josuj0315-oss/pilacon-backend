@@ -17,20 +17,20 @@ export class Center {
     @Column()
     name: string;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    businessName: string;
+    @Column('varchar', { length: 255, nullable: true })
+    businessName: string | null;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    address: string;
+    @Column('varchar', { length: 255, nullable: true })
+    address: string | null;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    addressDetail: string;
+    @Column('varchar', { length: 255, nullable: true })
+    addressDetail: string | null;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    phone: string;
+    @Column('varchar', { length: 255, nullable: true })
+    phone: string | null;
 
-    @Column({ type: 'simple-array', nullable: true })
-    equipment: string[];
+    @Column('simple-array', { nullable: true })
+    equipment: string[] | null;
 
     @Column({ default: false })
     isDefault: boolean;

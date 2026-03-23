@@ -10,38 +10,38 @@ export class User {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
-    username: string;
+    @Column('varchar', { length: 255, unique: true, nullable: true })
+    username: string | null;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    password: string;
+    @Column('varchar', { length: 255, nullable: true })
+    password: string | null;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    nickname: string;
+    @Column('varchar', { length: 255, nullable: true })
+    nickname: string | null;
 
-    @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
-    socialId: string;
+    @Column('varchar', { length: 255, unique: true, nullable: true })
+    socialId: string | null;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    provider: string; // 'kakao' | 'naver' | 'local'
+    @Column('varchar', { length: 255, nullable: true })
+    provider: string | null; // 'kakao' | 'naver' | 'local'
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    name: string;
+    @Column('varchar', { length: 255, nullable: true })
+    name: string | null;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    email: string;
+    @Column('varchar', { length: 255, nullable: true })
+    email: string | null;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    phone: string;
+    @Column('varchar', { length: 255, nullable: true })
+    phone: string | null;
 
     @Column({ default: false })
     marketingAgree: boolean;
 
-    @Column({ type: 'text', nullable: true })
-    profileImage: string;
+    @Column('text', { nullable: true })
+    profileImage: string | null;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    hashedRefreshToken: string;
+    @Column('varchar', { length: 255, nullable: true })
+    hashedRefreshToken: string | null;
 
     @OneToMany(() => InstructorProfile, (profile) => profile.user)
     instructorProfiles: InstructorProfile[];

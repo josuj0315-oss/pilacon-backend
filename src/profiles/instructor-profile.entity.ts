@@ -16,37 +16,37 @@ export class InstructorProfile {
     @Column({ name: 'is_primary', type: 'tinyint', width: 1, default: 0 })
     isPrimary: boolean;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    title: string;
+    @Column('varchar', { length: 255, nullable: true })
+    title: string | null;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    intro: string;
+    @Column('varchar', { length: 255, nullable: true })
+    intro: string | null;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    experience: string;
+    @Column('varchar', { length: 255, nullable: true })
+    experience: string | null;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    specialty: string;
+    @Column('varchar', { length: 255, nullable: true })
+    specialty: string | null;
 
     // sub 전용
-    @Column({ type: 'text', nullable: true })
-    message: string;
+    @Column('text', { nullable: true })
+    message: string | null;
 
-    @Column({ name: 'resume_url', type: 'text', nullable: true })
-    resumeUrl: string;
+    @Column('text', { name: 'resume_url', nullable: true })
+    resumeUrl: string | null;
 
-    @Column({ name: 'activity_url', type: 'text', nullable: true })
-    activityUrl: string;
+    @Column('text', { name: 'activity_url', nullable: true })
+    activityUrl: string | null;
 
     // regular 전용
-    @Column({ name: 'detail_intro', type: 'text', nullable: true })
-    detailIntro: string;
+    @Column('text', { name: 'detail_intro', nullable: true })
+    detailIntro: string | null;
 
-    @Column({ name: 'pdf_url', type: 'text', nullable: true })
-    pdfUrl: string;
+    @Column('text', { name: 'pdf_url', nullable: true })
+    pdfUrl: string | null;
 
-    @Column({ name: 'portfolio_url', type: 'text', nullable: true })
-    portfolioUrl: string;
+    @Column('text', { name: 'portfolio_url', nullable: true })
+    portfolioUrl: string | null;
 
     @ManyToOne(() => User, (user) => user.instructorProfiles, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'user_id' })

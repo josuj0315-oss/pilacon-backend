@@ -20,78 +20,78 @@ export class Job {
     @Column()
     studio: string;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    location: string; // 지역 (구 단위)
+    @Column('varchar', { length: 255, nullable: true })
+    location: string | null; // 지역 (구 단위)
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    address: string; // 상세 주소
+    @Column('varchar', { length: 255, nullable: true })
+    address: string | null; // 상세 주소
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    addressDetail: string; // 아주 구체적인 주소
+    @Column('varchar', { length: 255, nullable: true })
+    addressDetail: string | null; // 아주 구체적인 주소
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    regionTab: string; // 지역 탭 (서울/경기 등)
+    @Column('varchar', { length: 255, nullable: true })
+    regionTab: string | null; // 지역 탭 (서울/경기 등)
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    time: string; // 통합 시간 표시용
+    @Column('varchar', { length: 255, nullable: true })
+    time: string | null; // 통합 시간 표시용
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    workTime: string; // 오전/오후/종일
+    @Column('varchar', { length: 255, nullable: true })
+    workTime: string | null; // 오전/오후/종일
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    workTimeNote: string; // 시간 상세 메모
+    @Column('varchar', { length: 255, nullable: true })
+    workTimeNote: string | null; // 시간 상세 메모
 
-    @Column({ type: 'simple-array', nullable: true })
-    days: string[];
+    @Column('simple-array', { nullable: true })
+    days: string[] | null;
 
-    @Column({ type: 'simple-array', nullable: true })
-    daysOfWeek: string[];
+    @Column('simple-array', { nullable: true })
+    daysOfWeek: string[] | null;
 
     @Column()
     pay: string;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    payDate: string; // 입금일
+    @Column('varchar', { length: 255, nullable: true })
+    payDate: string | null; // 입금일
 
     @Column({ default: false })
     taxDeduction: boolean; // 3.3% 세금 공제 여부
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    companyName: string; // 업체명(사업자명)
+    @Column('varchar', { length: 255, nullable: true })
+    companyName: string | null; // 업체명(사업자명)
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    phone: string; // 센터 연락처
+    @Column('varchar', { length: 255, nullable: true })
+    phone: string | null; // 센터 연락처
 
-    @Column({ type: 'simple-array', nullable: true })
-    equipment: string[]; // 사용기구 배열
+    @Column('simple-array', { nullable: true })
+    equipment: string[] | null; // 사용기구 배열
 
     @ManyToOne(() => Center, (center) => center.jobs, { nullable: true })
     @JoinColumn({ name: 'centerId' })
-    center: Center;
+    center: Center | null;
 
-    @Column({ type: 'int', nullable: true })
-    centerId: number;
+    @Column('int', { nullable: true })
+    centerId: number | null;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    centerTempName: string;
+    @Column('varchar', { length: 255, nullable: true })
+    centerTempName: string | null;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    centerTempBusinessName: string;
+    @Column('varchar', { length: 255, nullable: true })
+    centerTempBusinessName: string | null;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    centerTempAddress: string;
+    @Column('varchar', { length: 255, nullable: true })
+    centerTempAddress: string | null;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    centerTempAddressDetail: string;
+    @Column('varchar', { length: 255, nullable: true })
+    centerTempAddressDetail: string | null;
 
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    centerTempPhone: string;
+    @Column('varchar', { length: 255, nullable: true })
+    centerTempPhone: string | null;
 
-    @Column({ type: 'text', nullable: true })
-    centerTempEquipment: string;
+    @Column('text', { nullable: true })
+    centerTempEquipment: string | null;
 
-    @Column({ type: 'text', nullable: true })
-    description: string;
+    @Column('text', { nullable: true })
+    description: string | null;
 
     @Column({ default: 'active' })
     status: string;
@@ -99,15 +99,15 @@ export class Job {
     @Column({ default: 0 })
     views: number;
 
-    @Column({ type: 'datetime', nullable: true })
-    endAt: Date;
+    @Column('datetime', { nullable: true })
+    endAt: Date | null;
 
     @ManyToOne(() => User, (user) => user.jobs, { nullable: true })
     @JoinColumn({ name: 'userId' })
-    user: User;
+    user: User | null;
 
-    @Column({ type: 'int', nullable: true })
-    userId: number;
+    @Column('int', { nullable: true })
+    userId: number | null;
 
     @OneToMany(() => Application, (application) => application.job)
     applications: Application[];
