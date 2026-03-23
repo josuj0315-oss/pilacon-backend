@@ -28,7 +28,7 @@ async function bootstrap() {
       'http://localhost:5173', // Vite default port
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type,Accept,Authorization,X-Requested-With',
+    allowedHeaders: 'Content-Type,Accept,Authorization,X-Requested-With,Origin,X-Requested-With,Accept-Encoding,Accept-Language,Connection,Host,Referer,User-Agent',
     credentials: true,
   });
   
