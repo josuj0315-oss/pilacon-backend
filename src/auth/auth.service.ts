@@ -62,7 +62,16 @@ export class AuthService {
         const { username, password } = details;
         const user = await this.userRepository.findOneBy({ username });
 
-        if (!user || !user.password) {
+        if (!user) {
+            throw new UnauthorizedException('아이디 또는 비밀번호가 올바르지 않습니다.');
+        }
+
+        if (user.provider !== 'local') {
+            const providerName = user.provider === 'kakao' ? '카카오' : user.provider === 'naver' ? '네이버' : user.provider;
+            throw new UnauthorizedException(`이 계정은 ${providerName} 소셜 로그인으로 가입되었습니다. 해당 소셜 로그인을 이용해주세요.`);
+        }
+
+        if (!user.password) {
             throw new UnauthorizedException('아이디 또는 비밀번호가 올바르지 않습니다.');
         }
 
@@ -74,9 +83,47 @@ export class AuthService {
         return user;
     }
 
-    generateJwt(user: User) {
+    async getTokens(user: User) {
         const payload = { sub: user.id, socialId: user.socialId, name: user.name, provider: user.provider };
-        return this.jwtService.sign(payload);
+        
+        const [accessToken, refreshToken] = await Promise.all([
+            this.jwtService.signAsync(payload, { expiresIn: '1h' }),
+            this.jwtService.signAsync(payload, { expiresIn: '7d' }),
+        ]);
+
+        return { accessToken, refreshToken };
+    }
+
+    async updateRefreshToken(userId: number, refreshToken: string) {
+        const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+        await this.userRepository.update(userId, { hashedRefreshToken });
+    }
+
+    async removeRefreshToken(userId: number) {
+        await this.userRepository.update(userId, { hashedRefreshToken: null });
+    }
+
+    async refreshTokens(refreshToken: string) {
+        try {
+            const decoded = await this.jwtService.verifyAsync(refreshToken);
+            const userId = decoded.sub;
+
+            const user = await this.userRepository.findOneBy({ id: userId });
+            if (!user || !user.hashedRefreshToken) {
+                throw new UnauthorizedException('토큰이 유효하지 않습니다.');
+            }
+
+            const rtMatches = await bcrypt.compare(refreshToken, user.hashedRefreshToken);
+            if (!rtMatches) {
+                throw new UnauthorizedException('토큰이 유효하지 않습니다.');
+            }
+
+            const tokens = await this.getTokens(user);
+            await this.updateRefreshToken(user.id, tokens.refreshToken);
+            return tokens;
+        } catch (e) {
+            throw new UnauthorizedException('Refresh token 만료 또는 유효하지 않음');
+        }
     }
 
     async findUserById(id: number) {

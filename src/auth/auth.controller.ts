@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Req, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req, Res, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
@@ -13,15 +13,32 @@ export class AuthController {
     @Post('signup')
     async signup(@Body() body) {
         const user = await this.authService.signup(body);
-        const token = this.authService.generateJwt(user);
-        return { user, token };
+        const tokens = await this.authService.getTokens(user);
+        await this.authService.updateRefreshToken(user.id, tokens.refreshToken);
+        return { user, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken };
     }
 
     @Post('login')
     async login(@Body() body) {
         const user = await this.authService.login(body);
-        const token = this.authService.generateJwt(user);
-        return { user, token };
+        const tokens = await this.authService.getTokens(user);
+        await this.authService.updateRefreshToken(user.id, tokens.refreshToken);
+        return { user, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken };
+    }
+
+    @Post('logout')
+    @UseGuards(AuthGuard('jwt'))
+    async logout(@Req() req) {
+        await this.authService.removeRefreshToken(req.user.id);
+        return { ok: true };
+    }
+
+    @Post('refresh')
+    async refresh(@Body() body: { refreshToken: string }) {
+        if (!body.refreshToken) {
+            throw new UnauthorizedException('Refresh token is required');
+        }
+        return this.authService.refreshTokens(body.refreshToken);
     }
 
     @Get('kakao')
@@ -34,7 +51,8 @@ export class AuthController {
     @UseGuards(AuthGuard('kakao'))
     async kakaoCallback(@Req() req, @Res() res) {
         const user: any = await this.authService.validateUser(req.user);
-        const token = this.authService.generateJwt(user);
+        const tokens = await this.authService.getTokens(user);
+        await this.authService.updateRefreshToken(user.id, tokens.refreshToken);
         
         // Use FRONTEND_URL from env, fallback to production URL if missing, and remove trailing slash
         let frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://pilacon-frontend.vercel.app';
@@ -46,7 +64,7 @@ export class AuthController {
         
         frontendUrl = frontendUrl.replace(/\/$/, '');
 
-        const finalUrl = `${frontendUrl}/login?accessToken=${token}`;
+        const finalUrl = `${frontendUrl}/login?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`;
         console.log(`\n--- [Backend] Kakao Login Success ---`);
         console.log(`1. Target Frontend URL: ${frontendUrl}`);
         console.log(`2. Final Redirect URI: ${finalUrl}`);
@@ -64,7 +82,8 @@ export class AuthController {
     @UseGuards(AuthGuard('naver'))
     async naverCallback(@Req() req, @Res() res) {
         const user: any = await this.authService.validateUser(req.user);
-        const token = this.authService.generateJwt(user);
+        const tokens = await this.authService.getTokens(user);
+        await this.authService.updateRefreshToken(user.id, tokens.refreshToken);
         
         // Use FRONTEND_URL from env, fallback to production URL if missing, and remove trailing slash
         let frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://pilacon-frontend.vercel.app';
@@ -76,7 +95,7 @@ export class AuthController {
         
         frontendUrl = frontendUrl.replace(/\/$/, '');
 
-        const finalUrl = `${frontendUrl}/login?accessToken=${token}`;
+        const finalUrl = `${frontendUrl}/login?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`;
         console.log(`\n--- [Backend] Naver Login Success ---`);
         console.log(`1. Target Frontend URL: ${frontendUrl}`);
         console.log(`2. Final Redirect URI: ${finalUrl}`);
