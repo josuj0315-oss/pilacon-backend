@@ -26,10 +26,10 @@ export class NotificationSetting {
     allowMatchingJob: boolean;
 
     @Column({ type: 'time', nullable: true })
-    quietHoursStart: string;
+    quietHoursStart: string | null;
 
     @Column({ type: 'time', nullable: true })
-    quietHoursEnd: string;
+    quietHoursEnd: string | null;
 
     @CreateDateColumn()
     createdAt: Date;

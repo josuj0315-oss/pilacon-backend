@@ -280,7 +280,7 @@ export class JobsService {
                 }
 
                 // 2. 매장(센터)에게 알림 (D-1만)
-                if (days === 1) {
+                if (days === 1 && job.userId) {
                     await this.notificationsService.createNotification({
                         receiverUserId: job.userId,
                         type: NotificationType.JOB_CLOSING_SOON,

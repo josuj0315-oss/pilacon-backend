@@ -23,7 +23,7 @@ export class ChatParticipant {
     userId: number;
 
     @Column({ nullable: true })
-    role: string; // 'center' | 'instructor'
+    role: string | null; // 'center' | 'instructor'
 
     @CreateDateColumn()
     joinedAt: Date;

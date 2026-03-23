@@ -104,15 +104,17 @@ export class ApplicationsService {
             });
 
             // 2. 매장(센터)에게 신규 지원 알림
-            await this.notificationsService.createNotification({
-                receiverUserId: job.userId,
-                type: NotificationType.NEW_APPLICATION,
-                title: '신규 지원자가 도착했어요!',
-                body: `${applicantUser?.nickname || '회원'}님이 "${job.title}"에 지원했습니다.`,
-                deepLink: `/activity/applicants/${job.id}`,
-                resourceType: 'APPLICATION',
-                resourceId: saved.id,
-            });
+            if (job.userId) {
+                await this.notificationsService.createNotification({
+                    receiverUserId: job.userId,
+                    type: NotificationType.NEW_APPLICATION,
+                    title: '신규 지원자가 도착했어요!',
+                    body: `${applicantUser?.nickname || '회원'}님이 "${job.title}"에 지원했습니다.`,
+                    deepLink: `/activity/applicants/${job.id}`,
+                    resourceType: 'APPLICATION',
+                    resourceId: saved.id,
+                });
+            }
         } catch (e) {
             console.error('Failed to send apply notification:', e);
         }
@@ -170,15 +172,17 @@ export class ApplicationsService {
 
         // 알림 발송: 공고 담당자에게 취소 알림
         try {
-            await this.notificationsService.createNotification({
-                receiverUserId: application.job.userId,
-                type: NotificationType.APPLICATION_CANCELED,
-                title: '지원이 취소되었습니다.',
-                body: `${application.user?.nickname || '지원자'}님이 "${application.job.title}" 공고에 대한 지원을 취소했습니다.`,
-                deepLink: `/activity/applicants/${application.job.id}?id=${application.id}`,
-                resourceType: 'APPLICATION',
-                resourceId: application.id,
-            });
+            if (application.job.userId) {
+                await this.notificationsService.createNotification({
+                    receiverUserId: application.job.userId,
+                    type: NotificationType.APPLICATION_CANCELED,
+                    title: '지원이 취소되었습니다.',
+                    body: `${application.user?.nickname || '지원자'}님이 "${application.job.title}" 공고에 대한 지원을 취소했습니다.`,
+                    deepLink: `/activity/applicants/${application.job.id}?id=${application.id}`,
+                    resourceType: 'APPLICATION',
+                    resourceId: application.id,
+                });
+            }
         } catch (e) {
             console.error('Failed to send cancellation notification:', e);
         }

@@ -29,10 +29,10 @@ export class ChatMessage {
     type: string;
 
     @Column({ type: 'varchar', nullable: true })
-    imageUrl: string;
+    imageUrl: string | null;
 
     @Column({ type: 'varchar', nullable: true })
-    imageKey: string;
+    imageKey: string | null;
 
     @CreateDateColumn()
     @Index()

@@ -40,13 +40,13 @@ export class Notification {
     body: string;
 
     @Column({ nullable: true })
-    deepLink: string;
+    deepLink: string | null;
 
     @Column({ nullable: true })
-    resourceType: string; // JOB, APPLICATION, CHAT 등
+    resourceType: string | null; // JOB, APPLICATION, CHAT 등
 
     @Column({ nullable: true })
-    resourceId: number;
+    resourceId: number | null;
 
     @Column({ default: false })
     isRead: boolean;
@@ -55,5 +55,5 @@ export class Notification {
     createdAt: Date;
 
     @Column({ nullable: true })
-    readAt: Date;
+    readAt: Date | null;
 }

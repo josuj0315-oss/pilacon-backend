@@ -26,24 +26,24 @@ export class ChatRoom {
     job: Job;
 
     @Column({ nullable: true })
-    instructorId: number;
+    instructorId: number | null;
 
     @ManyToOne(() => User, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'instructorId' })
-    instructor: User;
+    instructor: User | null;
 
     @Column({ nullable: true })
-    centerId: number;
+    centerId: number | null;
 
     @ManyToOne(() => User, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'centerId' })
-    center: User;
+    center: User | null;
 
     @CreateDateColumn()
     createdAt: Date;
 
     @Column({ nullable: true })
-    lastMessageAt: Date;
+    lastMessageAt: Date | null;
 
     @OneToMany(() => ChatParticipant, (participant) => participant.room)
     participants: ChatParticipant[];

@@ -51,6 +51,10 @@ export class ChatService {
         const instructorId = application.userId;
         const centerId = job.userId;
 
+        if (!instructorId || !centerId) {
+            throw new NotFoundException('참여자 정보를 찾을 수 없습니다.');
+        }
+
         let room = await this.roomRepository.findOne({
             where: { instructorId, centerId },
         });
@@ -76,29 +80,28 @@ export class ChatService {
         }
 
         // 4. 방 생성 및 참여자 등록
-        room = this.roomRepository.create({
+        const newRoom = this.roomRepository.create({
             applicationId: application.id,
             jobId: job.id,
             instructorId,
             centerId,
         });
-        const savedRoom = await this.roomRepository.save(room);
+        const savedRoom = await this.roomRepository.save(newRoom);
 
         // 참가자 생성
         const participants = [
             this.participantRepository.create({
                 roomId: savedRoom.id,
-                userId: job.userId,
+                userId: centerId,
                 role: 'center',
             }),
             this.participantRepository.create({
                 roomId: savedRoom.id,
-                userId: application.userId,
+                userId: instructorId,
                 role: 'instructor',
             }),
         ];
         await this.participantRepository.save(participants);
-
         return savedRoom;
     }
 

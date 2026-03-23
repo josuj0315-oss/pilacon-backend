@@ -17,36 +17,36 @@ export class InstructorProfile {
     isPrimary: boolean;
 
     @Column({ nullable: true })
-    title: string;
+    title: string | null;
 
     @Column({ nullable: true })
-    intro: string;
+    intro: string | null;
 
     @Column({ nullable: true })
-    experience: string;
+    experience: string | null;
 
     @Column({ nullable: true })
-    specialty: string;
+    specialty: string | null;
 
     // sub 전용
     @Column({ type: 'text', nullable: true })
-    message: string;
+    message: string | null;
 
     @Column({ name: 'resume_url', type: 'text', nullable: true })
-    resumeUrl: string;
+    resumeUrl: string | null;
 
     @Column({ name: 'activity_url', type: 'text', nullable: true })
-    activityUrl: string;
+    activityUrl: string | null;
 
     // regular 전용
     @Column({ name: 'detail_intro', type: 'text', nullable: true })
-    detailIntro: string;
+    detailIntro: string | null;
 
     @Column({ name: 'pdf_url', type: 'text', nullable: true })
-    pdfUrl: string;
+    pdfUrl: string | null;
 
     @Column({ name: 'portfolio_url', type: 'text', nullable: true })
-    portfolioUrl: string;
+    portfolioUrl: string | null;
 
     @ManyToOne(() => User, (user) => user.instructorProfiles, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'user_id' })

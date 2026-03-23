@@ -34,7 +34,7 @@ export class Application {
     instructorProfileId: number;
 
     @Column({ type: 'text', nullable: true })
-    message: string;
+    message: string | null;
 
     @Column({ type: 'simple-json', nullable: true })
     profileSnapshot: any;
@@ -43,13 +43,13 @@ export class Application {
     isViewed: boolean;
 
     @Column({ type: 'timestamp', nullable: true })
-    viewedAt: Date;
+    viewedAt: Date | null;
 
     @Column({ type: 'text', nullable: true })
-    cancelReason: string;
+    cancelReason: string | null;
 
     @Column({ type: 'text', nullable: true })
-    cancelReasonDetail: string;
+    cancelReasonDetail: string | null;
 
 
     @CreateDateColumn()

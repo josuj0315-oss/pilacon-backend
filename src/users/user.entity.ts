@@ -11,37 +11,37 @@ export class User {
     id: number;
 
     @Column({ unique: true, nullable: true })
-    username: string;
+    username: string | null;
 
     @Column({ nullable: true })
-    password: string;
+    password: string | null;
 
     @Column({ nullable: true })
-    nickname: string;
+    nickname: string | null;
 
     @Column({ unique: true, nullable: true })
-    socialId: string;
+    socialId: string | null;
 
     @Column({ nullable: true })
-    provider: string; // 'kakao' | 'naver' | 'local'
+    provider: string | null; // 'kakao' | 'naver' | 'local'
 
     @Column({ nullable: true })
-    name: string;
+    name: string | null;
 
     @Column({ nullable: true })
-    email: string;
+    email: string | null;
 
     @Column({ nullable: true })
-    phone: string;
+    phone: string | null;
 
     @Column({ default: false })
     marketingAgree: boolean;
 
     @Column({ nullable: true })
-    profileImage: string;
+    profileImage: string | null;
 
     @Column({ type: 'varchar', nullable: true })
-    hashedRefreshToken: string;
+    hashedRefreshToken: string | null;
 
     @OneToMany(() => InstructorProfile, (profile) => profile.user)
     instructorProfiles: InstructorProfile[];

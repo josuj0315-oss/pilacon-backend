@@ -21,77 +21,77 @@ export class Job {
     studio: string;
 
     @Column({ nullable: true })
-    location: string; // 지역 (구 단위)
+    location: string | null; // 지역 (구 단위)
 
     @Column({ nullable: true })
-    address: string; // 상세 주소
+    address: string | null; // 상세 주소
 
     @Column({ nullable: true })
-    addressDetail: string; // 아주 구체적인 주소
+    addressDetail: string | null; // 아주 구체적인 주소
 
     @Column({ nullable: true })
-    regionTab: string; // 지역 탭 (서울/경기 등)
+    regionTab: string | null; // 지역 탭 (서울/경기 등)
 
     @Column({ nullable: true })
-    time: string; // 통합 시간 표시용
+    time: string | null; // 통합 시간 표시용
 
     @Column({ nullable: true })
-    workTime: string; // 오전/오후/종일
+    workTime: string | null; // 오전/오후/종일
 
     @Column({ nullable: true })
-    workTimeNote: string; // 시간 상세 메모
+    workTimeNote: string | null; // 시간 상세 메모
 
     @Column({ type: 'simple-array', nullable: true })
-    days: string[];
+    days: string[] | null;
 
     @Column({ type: 'simple-array', nullable: true })
-    daysOfWeek: string[];
+    daysOfWeek: string[] | null;
 
     @Column()
     pay: string;
 
     @Column({ nullable: true })
-    payDate: string; // 입금일
+    payDate: string | null; // 입금일
 
     @Column({ default: false })
     taxDeduction: boolean; // 3.3% 세금 공제 여부
 
     @Column({ nullable: true })
-    companyName: string; // 업체명(사업자명)
+    companyName: string | null; // 업체명(사업자명)
 
     @Column({ nullable: true })
-    phone: string; // 센터 연락처
+    phone: string | null; // 센터 연락처
 
     @Column({ type: 'simple-array', nullable: true })
-    equipment: string[]; // 사용기구 배열
+    equipment: string[] | null; // 사용기구 배열
 
     @ManyToOne(() => Center, (center) => center.jobs, { nullable: true })
     @JoinColumn({ name: 'centerId' })
-    center: Center;
+    center: Center | null;
 
     @Column({ nullable: true })
-    centerId: number;
+    centerId: number | null;
 
     @Column({ type: 'varchar', nullable: true })
-    centerTempName: string;
+    centerTempName: string | null;
 
     @Column({ type: 'varchar', nullable: true })
-    centerTempBusinessName: string;
+    centerTempBusinessName: string | null;
 
     @Column({ type: 'varchar', nullable: true })
-    centerTempAddress: string;
+    centerTempAddress: string | null;
 
     @Column({ type: 'varchar', nullable: true })
-    centerTempAddressDetail: string;
+    centerTempAddressDetail: string | null;
 
     @Column({ type: 'varchar', nullable: true })
-    centerTempPhone: string;
+    centerTempPhone: string | null;
 
     @Column({ type: 'text', nullable: true })
-    centerTempEquipment: string;
+    centerTempEquipment: string | null;
 
     @Column({ type: 'text', nullable: true })
-    description: string;
+    description: string | null;
 
     @Column({ default: 'active' })
     status: string;
@@ -100,14 +100,14 @@ export class Job {
     views: number;
 
     @Column({ type: 'datetime', nullable: true })
-    endAt: Date;
+    endAt: Date | null;
 
     @ManyToOne(() => User, (user) => user.jobs, { nullable: true })
     @JoinColumn({ name: 'userId' })
-    user: User;
+    user: User | null;
 
     @Column({ nullable: true })
-    userId: number;
+    userId: number | null;
 
     @OneToMany(() => Application, (application) => application.job)
     applications: Application[];

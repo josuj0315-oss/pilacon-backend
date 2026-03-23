@@ -18,19 +18,19 @@ export class Center {
     name: string;
 
     @Column({ nullable: true })
-    businessName: string;
+    businessName: string | null;
 
     @Column({ nullable: true })
-    address: string;
+    address: string | null;
 
     @Column({ nullable: true })
-    addressDetail: string;
+    addressDetail: string | null;
 
     @Column({ nullable: true })
-    phone: string;
+    phone: string | null;
 
     @Column({ type: 'simple-array', nullable: true })
-    equipment: string[];
+    equipment: string[] | null;
 
     @Column({ default: false })
     isDefault: boolean;
