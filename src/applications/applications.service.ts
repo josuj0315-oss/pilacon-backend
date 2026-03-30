@@ -92,24 +92,25 @@ export class ApplicationsService {
         try {
             const applicantUser = await this.applicationRepository.manager.findOne('User', { where: { id: userId } }) as any;
 
-            // 1. 강사(지원자)에게 지원 완료 알림
+            // 1. 강사(지원자)에게 지원 완료 알림 (In-App Only)
             await this.notificationsService.createNotification({
                 receiverUserId: userId,
                 type: NotificationType.APPLY_SUBMITTED,
                 title: existing ? '재지원 완료' : '지원 완료',
-                body: `"${job.title}" 공고에 ${existing ? '다시 ' : ''}지원이 완료되었습니다.`,
+                body: `[${job.title}] 공고에 ${existing ? '다시 ' : ''}지원이 완료되었습니다.`,
                 deepLink: `/activity?view=appliedDetail&id=${saved.id}`,
                 resourceType: 'APPLICATION',
                 resourceId: saved.id,
             });
 
-            // 2. 매장(센터)에게 신규 지원 알림
+            // 2. 매장(센터)에게 신규 지원 알림 (PUSH)
             if (job.userId) {
+                const applicantName = applicantUser?.nickname || applicantUser?.name || '회원';
                 await this.notificationsService.createNotification({
                     receiverUserId: job.userId,
                     type: NotificationType.NEW_APPLICATION,
                     title: '신규 지원자가 도착했어요!',
-                    body: `${applicantUser?.nickname || '회원'}님이 "${job.title}"에 지원했습니다.`,
+                    body: `[${job.title}] ${applicantName}님이 지원했습니다.`,
                     deepLink: `/activity/applicants/${job.id}`,
                     resourceType: 'APPLICATION',
                     resourceId: saved.id,
@@ -137,12 +138,12 @@ export class ApplicationsService {
             application.status = 'read';
             await this.applicationRepository.save(application);
 
-            // 알림 발송: 강사에게 APPLICATION_VIEWED
+            // 알림 발송: 강사에게 APPLICATION_VIEWED (In-App Only)
             await this.notificationsService.createNotification({
                 receiverUserId: application.userId,
                 type: NotificationType.APPLICATION_VIEWED,
                 title: '매장이 내 지원서를 확인했어요',
-                body: `"${application.job.title}" 공고에 대한 지원서를 매장에서 확인했습니다.`,
+                body: `[${application.job.title}] 공고에 대한 지원서를 매장에서 확인했습니다.`,
                 deepLink: `/activity?view=appliedDetail&id=${application.id}`,
                 resourceType: 'APPLICATION',
                 resourceId: application.id,
@@ -173,11 +174,12 @@ export class ApplicationsService {
         // 알림 발송: 공고 담당자에게 취소 알림
         try {
             if (application.job.userId) {
+                const applicantName = application.user?.nickname || application.user?.name || '지원자';
                 await this.notificationsService.createNotification({
                     receiverUserId: application.job.userId,
                     type: NotificationType.APPLICATION_CANCELED,
                     title: '지원이 취소되었습니다.',
-                    body: `${application.user?.nickname || '지원자'}님이 "${application.job.title}" 공고에 대한 지원을 취소했습니다.`,
+                    body: `[${application.job.title}] ${applicantName}님이 지원을 취소했습니다.`,
                     deepLink: `/activity/applicants/${application.job.id}?id=${application.id}`,
                     resourceType: 'APPLICATION',
                     resourceId: application.id,
@@ -216,13 +218,13 @@ export class ApplicationsService {
             await this.jobRepository.save(job);
         }
 
-        // 알림 발송: 지원자에게 채용확정 알림
+        // 알림 발송: 지원자에게 채용확정 알림 (PUSH)
         try {
             await this.notificationsService.createNotification({
                 receiverUserId: application.userId,
                 type: NotificationType.APPLICATION_ACCEPTED,
                 title: '채용이 확정되었습니다!',
-                body: `"${job.title}" 공고에 채용이 확정되었습니다. 축하드립니다!`,
+                body: `[${job.title}] 채용이 확정되었습니다. 축하드립니다!`,
                 deepLink: `/activity?tab=applied&view=appliedDetail&id=${application.id}`,
                 resourceType: 'APPLICATION',
                 resourceId: application.id,

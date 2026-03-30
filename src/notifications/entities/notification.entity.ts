@@ -16,6 +16,17 @@ export enum NotificationType {
     APPLICATION_ACCEPTED = 'APPLICATION_ACCEPTED',
 }
 
+export function shouldSendPush(type: NotificationType): boolean {
+    const pushTypes = [
+        NotificationType.CHAT_RECEIVED,
+        NotificationType.NEW_APPLICATION,
+        NotificationType.APPLICATION_ACCEPTED,
+        NotificationType.APPLICATION_CANCELED,
+        NotificationType.JOB_CLOSED,
+    ];
+    return pushTypes.includes(type);
+}
+
 @Entity('notification')
 @Index(['receiverUserId', 'isRead'])
 @Index(['receiverUserId', 'createdAt'])

@@ -18,6 +18,16 @@ export class AuthController {
         return { user, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken };
     }
 
+    @Post('phone/request')
+    async requestPhoneVerification(@Body() body: { phone?: string }) {
+        return this.authService.requestPhoneVerification(body?.phone || '');
+    }
+
+    @Post('phone/verify')
+    async verifyPhoneCode(@Body() body: { phone?: string; code?: string }) {
+        return this.authService.verifyPhoneCode(body?.phone || '', body?.code || '');
+    }
+
     @Post('login')
     async login(@Body() body) {
         const user = await this.authService.login(body);
@@ -53,22 +63,15 @@ export class AuthController {
         const user: any = await this.authService.validateUser(req.user);
         const tokens = await this.authService.getTokens(user);
         await this.authService.updateRefreshToken(user.id, tokens.refreshToken);
-        
-        // Use FRONTEND_URL from env, fallback to production URL if missing, and remove trailing slash
-        let frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://pilacon-frontend.vercel.app';
-        
-        // **강제 수정**: 기존 Railway 환경변수에 'pilacon.vercel.app' 등 예전 주소가 남아있을 수 있으므로 강제 덮어쓰기
-        if (frontendUrl.includes('vercel.app')) {
-            frontendUrl = 'https://pilacon-frontend.vercel.app';
-        }
-        
-        frontendUrl = frontendUrl.replace(/\/$/, '');
 
+        const frontendUrl = (this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173').replace(/\/$/, '');
         const finalUrl = `${frontendUrl}/login?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`;
-        console.log(`\n--- [Backend] Kakao Login Success ---`);
+        
+        console.log(`
+--- [Backend] Kakao Login Success ---`);
         console.log(`1. Target Frontend URL: ${frontendUrl}`);
         console.log(`2. Final Redirect URI: ${finalUrl}`);
-        
+
         res.redirect(finalUrl);
     }
 
@@ -84,22 +87,15 @@ export class AuthController {
         const user: any = await this.authService.validateUser(req.user);
         const tokens = await this.authService.getTokens(user);
         await this.authService.updateRefreshToken(user.id, tokens.refreshToken);
-        
-        // Use FRONTEND_URL from env, fallback to production URL if missing, and remove trailing slash
-        let frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://pilacon-frontend.vercel.app';
-        
-        // **강제 수정**: 기존 Railway 환경변수에 'pilacon.vercel.app' 등 예전 주소가 남아있을 수 있으므로 강제 덮어쓰기
-        if (frontendUrl.includes('vercel.app')) {
-            frontendUrl = 'https://pilacon-frontend.vercel.app';
-        }
-        
-        frontendUrl = frontendUrl.replace(/\/$/, '');
 
+        const frontendUrl = (this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173').replace(/\/$/, '');
         const finalUrl = `${frontendUrl}/login?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`;
-        console.log(`\n--- [Backend] Naver Login Success ---`);
+
+        console.log(`
+--- [Backend] Naver Login Success ---`);
         console.log(`1. Target Frontend URL: ${frontendUrl}`);
         console.log(`2. Final Redirect URI: ${finalUrl}`);
-        
+
         res.redirect(finalUrl);
     }
 

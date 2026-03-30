@@ -175,21 +175,28 @@ export class ChatService {
             lastMessageAt: savedMessage.createdAt,
         });
 
-        // 알림 발송: 상대방에게 CHAT_RECEIVED
+        // 알림 발송: 상대방에게 CHAT_RECEIVED (PUSH)
         try {
-            const participants = await this.participantRepository.find({
-                where: { roomId },
-                relations: ['user']
+            const room = await this.roomRepository.findOne({
+                where: { id: roomId },
+                relations: ['job', 'participants', 'participants.user'],
             });
-            const otherParticipant = participants.find(p => p.userId !== userId);
+
+            if (!room) return savedMessage;
+
+            const otherParticipant = room.participants.find(p => p.userId !== userId);
+            const sender = room.participants.find(p => p.userId === userId)?.user;
 
             if (otherParticipant) {
-                const sender = await this.participantRepository.manager.findOne('User', { where: { id: userId } }) as any;
+                const jobTitle = room.job?.title || '채용건';
+                const senderName = sender?.nickname || '회원';
+                const snippet = type === 'image' ? '이미지를 보냈습니다.' : (content.length > 20 ? content.slice(0, 20) + '...' : content);
+
                 await this.notificationsService.createNotification({
                     receiverUserId: otherParticipant.userId,
                     type: NotificationType.CHAT_RECEIVED,
-                    title: '새로운 메시지',
-                    body: type === 'image' ? `${sender?.nickname || '회원'}님이 이미지를 보냈습니다.` : `${sender?.nickname || '회원'}님: ${content.length > 20 ? content.slice(0, 20) + '...' : content}`,
+                    title: `[${jobTitle}] 새로운 메시지`,
+                    body: `${senderName}: ${snippet}`,
                     deepLink: `/chat/${roomId}`,
                     resourceType: 'CHAT',
                     resourceId: roomId,

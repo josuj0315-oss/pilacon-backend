@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Notification, NotificationType } from './entities/notification.entity';
+import { Notification, NotificationType, shouldSendPush } from './entities/notification.entity';
 import { NotificationSetting } from './entities/notification-setting.entity';
 import { Subject, Observable } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
@@ -39,14 +39,29 @@ export class NotificationsService {
         resourceType?: string;
         resourceId?: number;
     }) {
-        // 알림 설정 기능은 일단 보류 (기본 모두 ON)
         const notification = this.notificationRepository.create(params);
         const saved = await this.notificationRepository.save(notification);
 
-        // SSE 전송
+        // SSE 전송 (In-App real-time)
         this.notificationSubject.next({ receiverUserId: params.receiverUserId, data: saved });
 
+        // 푸시 알림 발송 (Filter & Send)
+        if (shouldSendPush(params.type)) {
+            await this.sendPushNotification(params.receiverUserId, params.title, params.body, {
+                type: params.type,
+                resourceType: params.resourceType,
+                resourceId: params.resourceId,
+                deepLink: params.deepLink,
+            });
+        }
+
         return saved;
+    }
+
+    private async sendPushNotification(userId: number, title: string, body: string, data?: any) {
+        // [TODO] FCM 또는 OneSignal SDK 연동 필요
+        // 현재는 기준 정리를 위해 로그로 대체
+        console.log(`[PUSH SENT] To User(${userId}): [${title}] ${body}`, data);
     }
 
     async getNotifications(userId: number, page = 1, limit = 20) {
