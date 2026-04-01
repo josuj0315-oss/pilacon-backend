@@ -9,11 +9,19 @@ Sentry.init({
 
 import { NestFactory, BaseExceptionFilter, HttpAdapterHost } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Catch, ArgumentsHost } from '@nestjs/common';
+import { Catch, ArgumentsHost, HttpException } from '@nestjs/common';
 
 @Catch()
 export class SentryFilter extends BaseExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
+    // 400번대 에러(Client Error)는 Sentry에 보고하지 않음
+    if (exception instanceof HttpException) {
+      const status = exception.getStatus();
+      if (status >= 400 && status < 500) {
+        return super.catch(exception, host);
+      }
+    }
+
     Sentry.captureException(exception);
     super.catch(exception, host);
   }
