@@ -9,6 +9,7 @@ import { User } from '../users/user.entity';
 import { KakaoStrategy } from './strategies/kakao.strategy';
 import { NaverStrategy } from './strategies/naver.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
     imports: [
@@ -22,6 +23,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
                 signOptions: { expiresIn: '7d' },
             }),
         }),
+        MailModule,
     ],
     providers: [AuthService, KakaoStrategy, NaverStrategy, JwtStrategy],
     controllers: [AuthController],

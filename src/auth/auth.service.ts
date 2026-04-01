@@ -12,6 +12,7 @@ import { User } from '../users/user.entity';
 import * as bcrypt from 'bcryptjs';
 import { ConfigService } from '@nestjs/config';
 import { createHmac } from 'crypto';
+import { MailService } from '../mail/mail.service';
 
 type PhoneVerificationSession = {
   code: string;
@@ -22,12 +23,14 @@ type PhoneVerificationSession = {
 @Injectable()
 export class AuthService {
   private readonly phoneVerificationSessions = new Map<string, PhoneVerificationSession>();
+  private readonly emailVerificationSessions = new Map<string, PhoneVerificationSession>(); // Reuse session type
 
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private mailService: MailService,
   ) {}
 
   async validateUser(details: any) {
@@ -51,7 +54,7 @@ export class AuthService {
   }
 
   async signup(details: any) {
-    const { username, password, nickname, name, email, phone, marketingAgree, phoneVerificationToken } = details;
+    const { username, password, nickname, name, email, phone, marketingAgree, phoneVerificationToken, emailVerificationToken } = details;
 
     const normalizedPhone = this.normalizePhone(phone);
     if (!normalizedPhone) {
@@ -59,6 +62,7 @@ export class AuthService {
     }
 
     await this.assertVerifiedPhone(normalizedPhone, phoneVerificationToken);
+    await this.assertVerifiedEmail(email, emailVerificationToken);
 
     const existingUser = await this.userRepository.findOneBy({ username });
     if (existingUser) {
@@ -79,6 +83,8 @@ export class AuthService {
       email,
       phone: normalizedPhone,
       marketingAgree: !!marketingAgree,
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
       provider: 'local',
     });
 
@@ -249,6 +255,76 @@ export class AuthService {
     };
   }
 
+  async requestEmailVerification(email: string) {
+    if (!email || !email.includes('@')) {
+      throw new BadRequestException('올바른 이메일 주소를 입력해 주세요.');
+    }
+
+    const now = Date.now();
+    const existingSession = this.emailVerificationSessions.get(email);
+    if (existingSession && now - existingSession.requestedAt < 30_000) {
+      throw new BadRequestException('인증번호는 30초 후 다시 요청할 수 있습니다.');
+    }
+
+    const testCode = this.configService.get<string>('EMAIL_VERIFICATION_TEST_CODE');
+    const code = testCode || this.generateVerificationCode();
+    
+    this.emailVerificationSessions.set(email, {
+      code,
+      requestedAt: now,
+      expiresAt: now + 10 * 60 * 1000, // 10 minutes
+    });
+
+    await this.mailService.sendVerificationEmail(email, code);
+
+    return {
+      ok: true,
+      message: '인증번호를 이메일로 전송했습니다.',
+    };
+  }
+
+  async verifyEmailCode(email: string, code: string) {
+    if (!email || !email.includes('@')) {
+      throw new BadRequestException('올바른 이메일 주소를 입력해 주세요.');
+    }
+
+    if (!/^\d{6}$/.test(String(code || ''))) {
+      throw new BadRequestException('인증번호 6자리를 입력해 주세요.');
+    }
+
+    const session = this.emailVerificationSessions.get(email);
+    const testCode = this.configService.get<string>('EMAIL_VERIFICATION_TEST_CODE');
+    const isTestCode = testCode && code === testCode;
+
+    if (!isTestCode) {
+      if (!session) {
+        throw new BadRequestException('인증번호를 먼저 요청해 주세요.');
+      }
+      if (session.expiresAt < Date.now()) {
+        this.emailVerificationSessions.delete(email);
+        throw new BadRequestException('인증 시간이 만료되었습니다. 다시 요청해 주세요.');
+      }
+      if (session.code !== code) {
+        throw new BadRequestException('인증번호가 올바르지 않습니다.');
+      }
+    }
+
+    this.emailVerificationSessions.delete(email);
+    const verificationToken = await this.jwtService.signAsync(
+      {
+        type: 'email-verification',
+        email,
+      },
+      { expiresIn: '30m' },
+    );
+
+    return {
+      verified: true,
+      verificationToken,
+      message: '이메일 인증이 완료되었습니다.',
+    };
+  }
+
   private async assertVerifiedPhone(phone: string, verificationToken?: string) {
     if (!verificationToken) {
       throw new BadRequestException('휴대폰 인증이 필요합니다.');
@@ -264,6 +340,24 @@ export class AuthService {
         throw error;
       }
       throw new BadRequestException('휴대폰 인증이 만료되었거나 유효하지 않습니다.');
+    }
+  }
+
+  private async assertVerifiedEmail(email: string, verificationToken?: string) {
+    if (!verificationToken) {
+      throw new BadRequestException('이메일 인증이 필요합니다.');
+    }
+
+    try {
+      const decoded = await this.jwtService.verifyAsync<{ type?: string; email?: string }>(verificationToken);
+      if (decoded.type !== 'email-verification' || decoded.email !== email) {
+        throw new BadRequestException('이메일 인증 정보가 올바르지 않습니다.');
+      }
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('이메일 인증이 만료되었거나 유효하지 않습니다.');
     }
   }
 

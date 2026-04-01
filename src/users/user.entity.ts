@@ -43,6 +43,15 @@ export class User {
     @Column('varchar', { length: 255, nullable: true })
     hashedRefreshToken: string | null;
 
+    @Column({ default: false })
+    isEmailVerified: boolean;
+
+    @Column('varchar', { length: 6, nullable: true })
+    emailVerificationCode: string | null;
+
+    @Column('timestamp', { nullable: true })
+    emailVerifiedAt: Date | null;
+
     @OneToMany(() => InstructorProfile, (profile) => profile.user)
     instructorProfiles: InstructorProfile[];
 

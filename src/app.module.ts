@@ -15,6 +15,7 @@ import { CentersModule } from './centers/centers.module';
 
 import { FavoritesModule } from './favorites/favorites.module';
 import { UploadModule } from './upload/upload.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [

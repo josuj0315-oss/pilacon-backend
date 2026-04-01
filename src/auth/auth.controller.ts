@@ -28,6 +28,16 @@ export class AuthController {
         return this.authService.verifyPhoneCode(body?.phone || '', body?.code || '');
     }
 
+    @Post('email/request')
+    async requestEmailVerification(@Body() body: { email?: string }) {
+        return this.authService.requestEmailVerification(body?.email || '');
+    }
+
+    @Post('email/verify')
+    async verifyEmailCode(@Body() body: { email?: string; code?: string }) {
+        return this.authService.verifyEmailCode(body?.email || '', body?.code || '');
+    }
+
     @Post('login')
     async login(@Body() body) {
         const user = await this.authService.login(body);
