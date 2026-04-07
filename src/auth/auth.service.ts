@@ -34,24 +34,33 @@ export class AuthService {
   ) {}
 
   async validateUser(details: any) {
+    console.log('\n--- [AuthService] validateUser ---');
+    console.log('Details from strategy:', details);
+
     let user = await this.userRepository.findOneBy({
       socialId: details.socialId,
       provider: details.provider,
     });
 
     if (user) {
-      user.name = details.name;
-      user.email = details.email;
+      user.name = details.name || user.name;
+      user.email = details.email || user.email;
+      // Naver mobile 필드를 phone 필드로 업데이트 (기존 phone이 없을 경우)
+      if (details.mobile && !user.phone) {
+          user.phone = details.mobile;
+      }
       await this.userRepository.save(user);
       return user;
     }
 
     const newUser = this.userRepository.create({
       ...details,
-      nickname: details.name,
+      phone: details.mobile || details.phone, // mobile이 있으면 phone으로 매핑
+      nickname: details.name || 'User',
     });
     return this.userRepository.save(newUser);
   }
+
 
   async signup(details: any) {
     const { username, password, nickname, name, email, phone, marketingAgree, phoneVerificationToken, emailVerificationToken } = details;
