@@ -16,6 +16,10 @@ import { CentersModule } from './centers/centers.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { UploadModule } from './upload/upload.module';
 import { MailModule } from './mail/mail.module';
+import { ReportsModule } from './reports/reports.module';
+import { InquiryModule } from './inquiry/inquiry.module';
+import { NoticeModule } from './notice/notice.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -51,6 +55,10 @@ import { MailModule } from './mail/mail.module';
     FavoritesModule,
     UploadModule,
     CentersModule,
+    ReportsModule,
+    InquiryModule,
+    NoticeModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -64,6 +64,9 @@ export class User {
     @OneToMany(() => Center, (center) => center.user)
     centers: Center[];
 
+    @Column({ default: 'USER' })
+    role: string; // 'USER', 'ADMIN'
+
     @CreateDateColumn()
     createdAt: Date;
 }
