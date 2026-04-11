@@ -38,10 +38,28 @@ export class NoticeService implements OnModuleInit {
     });
   }
 
-  async findOne(id: number): Promise<Notice> {
-    const notice = await this.noticeRepository.findOne({
-      where: { id, isPublished: true },
+  async findAllForAdmin(): Promise<any[]> {
+    const notices = await this.noticeRepository.find({
+      order: { createdAt: 'DESC' },
     });
+    
+    return notices.map(n => ({
+      ...n,
+      status: n.isPublished ? '노출' : '숨김',
+      type: '공지', // Frontend expects 'type'
+      date: n.createdAt.toISOString().split('T')[0], // Frontend expects 'date'
+      author: '관리자', // Frontend expects 'author'
+      viewCount: 0, // Placeholder
+    }));
+  }
+
+  async findOne(id: number, isAdmin = false): Promise<Notice> {
+    const where: any = { id };
+    if (!isAdmin) {
+      where.isPublished = true;
+    }
+    
+    const notice = await this.noticeRepository.findOne({ where });
 
     if (!notice) {
       throw new NotFoundException('해당 공지사항을 찾을 수 없거나 비공개 상태입니다.');
@@ -50,8 +68,8 @@ export class NoticeService implements OnModuleInit {
     return notice;
   }
 
-  async create(dto: CreateNoticeDto): Promise<Notice> {
-    const { title, content } = dto;
+  async create(dto: any): Promise<Notice> {
+    const { title, content, status, isPublished } = dto;
 
     if (!title || !title.trim()) {
       throw new BadRequestException('제목을 입력해주세요.');
@@ -61,11 +79,41 @@ export class NoticeService implements OnModuleInit {
       throw new BadRequestException('내용을 입력해주세요.');
     }
 
-    if (content.length < 5) {
-      throw new BadRequestException('공지 내용은 최소 5자 이상 입력해주세요.');
+    const noticeData: any = { title, content };
+    
+    // Map status from frontend to isPublished
+    if (status !== undefined) {
+      noticeData.isPublished = status === '노출';
+    } else if (isPublished !== undefined) {
+      noticeData.isPublished = isPublished;
+    } else {
+      noticeData.isPublished = true; // Default
     }
 
-    const notice = this.noticeRepository.create(dto);
+    const newNotice = this.noticeRepository.create(noticeData as Partial<Notice>);
+    return this.noticeRepository.save(newNotice);
+  }
+
+  async update(id: number, dto: any): Promise<Notice> {
+    const notice = await this.findOne(id, true);
+    const { title, content, status, isPublished } = dto;
+    
+    if (title) notice.title = title;
+    if (content) notice.content = content;
+    
+    if (status !== undefined) {
+      notice.isPublished = status === '노출';
+    } else if (isPublished !== undefined) {
+      notice.isPublished = isPublished;
+    }
+    
     return this.noticeRepository.save(notice);
+  }
+
+  async delete(id: number): Promise<void> {
+    const result = await this.noticeRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException('삭제할 공지사항을 찾을 수 없습니다.');
+    }
   }
 }

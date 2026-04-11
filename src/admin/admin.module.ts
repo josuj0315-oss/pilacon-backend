@@ -11,6 +11,9 @@ import { Job } from '../jobs/job.entity';
 import { Report } from '../reports/report.entity';
 import { Center } from '../centers/center.entity';
 import { AdminJwtStrategy } from './guards/admin-jwt.strategy';
+import { NoticeModule } from '../notice/notice.module';
+import { PopupModule } from '../popup/popup.module';
+import { PartnershipModule } from '../partnership/partnership.module';
 
 @Module({
     imports: [
@@ -23,7 +26,11 @@ import { AdminJwtStrategy } from './guards/admin-jwt.strategy';
                 signOptions: { expiresIn: '1d' },
             }),
         }),
+        NoticeModule,
+        PopupModule,
+        PartnershipModule,
     ],
+
     controllers: [AdminAuthController, AdminController],
     providers: [AdminService, AdminJwtStrategy],
     exports: [AdminService]

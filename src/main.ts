@@ -31,17 +31,22 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: true, // true allows any origin
+    origin: (origin, callback) => {
+      // 모든 origin 허용 (개발 단계)
+      callback(null, true);
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: [
       'Content-Type',
       'Authorization',
-      'cache-control',
       'X-Requested-With',
       'Accept',
-      'Origin'
+      'Origin',
+      'Cache-Control',
     ],
     credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   // 글로벌 에러 핸들러 연결 (모든 예외를 Sentry로 강력하게 수집 보장)

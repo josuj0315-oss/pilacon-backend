@@ -20,6 +20,8 @@ import { ReportsModule } from './reports/reports.module';
 import { InquiryModule } from './inquiry/inquiry.module';
 import { NoticeModule } from './notice/notice.module';
 import { AdminModule } from './admin/admin.module';
+import { PopupModule } from './popup/popup.module';
+import { PartnershipModule } from './partnership/partnership.module';
 
 @Module({
   imports: [
@@ -59,9 +61,10 @@ import { AdminModule } from './admin/admin.module';
     InquiryModule,
     NoticeModule,
     AdminModule,
+    PopupModule,
+    PartnershipModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule { }
-
