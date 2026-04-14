@@ -75,7 +75,8 @@ export class AdminService implements OnModuleInit {
     }
 
     async getStats() {
-        const totalUsers = await this.userRepository.count();
+        const instructorCount = await this.userRepository.count({ where: { role: 'INSTRUCTOR' } });
+        const centerCount = await this.userRepository.count({ where: { role: 'CENTER' } });
         const totalJobs = await this.jobRepository.count({ where: { status: 'active' } });
         const pendingReports = await this.reportRepository.count({ where: { status: 'PENDING' as any } });
 
@@ -86,7 +87,7 @@ export class AdminService implements OnModuleInit {
         });
 
         return {
-            totalMembers: { instructor: totalUsers, center: 0 },
+            totalMembers: { instructor: instructorCount, center: centerCount },
             activeJobs: totalJobs,
             newUsersToday,
             pendingReports,
@@ -197,7 +198,7 @@ export class AdminService implements OnModuleInit {
             id: u.id,
             name: u.name || u.nickname || '이름없음',
             email: u.email || u.username || '-',
-            type: u.centers && u.centers.length > 0 ? 'CENTER' : 'INSTRUCTOR',
+            type: u.role || (u.centers && u.centers.length > 0 ? 'CENTER' : 'INSTRUCTOR'),
             status: 'ACTIVE',
             reportCount: 0,
             createdAt: u.createdAt

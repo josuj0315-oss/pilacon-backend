@@ -45,20 +45,33 @@ export class AuthService {
     if (user) {
       user.name = details.name || user.name;
       user.email = details.email || user.email;
-      // Naver mobile 필드를 phone 필드로 업데이트 (기존 phone이 없을 경우)
+
       if (details.mobile && !user.phone) {
-          user.phone = details.mobile;
+        user.phone = details.mobile;
       }
+
       await this.userRepository.save(user);
       return user;
     }
 
+    const { socialId, provider, name, email, mobile, phone } = details;
+
     const newUser = this.userRepository.create({
-      ...details,
-      phone: details.mobile || details.phone, // mobile이 있으면 phone으로 매핑
-      nickname: details.name || 'User',
+      socialId,
+      provider,
+      name,
+      email,
+      phone: mobile || phone,
+      nickname: null,
     });
-    return this.userRepository.save(newUser);
+
+    console.log('🔥 newUser before save:', newUser);
+
+    const savedUser = await this.userRepository.save(newUser);
+
+    console.log('🔥 savedUser after save:', savedUser);
+
+    return savedUser;
   }
 
 
@@ -96,8 +109,10 @@ export class AuthService {
       emailVerifiedAt: new Date(),
       provider: 'local',
     });
-
-    return this.userRepository.save(newUser);
+    console.log('🔥 newUser before save:', newUser);
+    const savedUser = await this.userRepository.save(newUser);
+    console.log('🔥 savedUser after save:', savedUser);
+    return savedUser;
   }
 
   async login(details: any) {
@@ -160,7 +175,9 @@ export class AuthService {
   }
 
   async findUserById(id: number) {
-    return this.userRepository.findOneBy({ id });
+    const user = await this.userRepository.findOneBy({ id });
+    console.log(`🔥 [AuthService] findUserById(${id}):`, user);
+    return user;
   }
 
   async updateProfile(userId: number, updateData: any) {
@@ -172,6 +189,20 @@ export class AuthService {
     if (updateData.nickname !== undefined) user.nickname = updateData.nickname;
     if (updateData.email !== undefined) user.email = updateData.email;
     if (updateData.profileImage !== undefined) user.profileImage = updateData.profileImage;
+
+    // 역할(role) 업데이트 처리
+    if (updateData.role !== undefined) {
+      // 기존 role이 'USER'인 경우에만 'INSTRUCTOR' 또는 'CENTER'로 변경 가능
+      if (user.role === 'USER' || user.role === null) {
+        if (['INSTRUCTOR', 'CENTER'].includes(updateData.role)) {
+          user.role = updateData.role;
+        } else {
+          throw new BadRequestException('허용되지 않는 역할입니다.');
+        }
+      } else if (user.role !== updateData.role) {
+        throw new BadRequestException('역할은 최초 1회만 설정할 수 있습니다.');
+      }
+    }
 
     return this.userRepository.save(user);
   }
