@@ -188,19 +188,15 @@ export class AuthService {
 
     if (updateData.nickname !== undefined) user.nickname = updateData.nickname;
     if (updateData.email !== undefined) user.email = updateData.email;
+    if (updateData.phone !== undefined) user.phone = updateData.phone;
     if (updateData.profileImage !== undefined) user.profileImage = updateData.profileImage;
 
     // 역할(role) 업데이트 처리
     if (updateData.role !== undefined) {
-      // 기존 role이 'USER'인 경우에만 'INSTRUCTOR' 또는 'CENTER'로 변경 가능
-      if (user.role === 'USER' || user.role === null) {
-        if (['INSTRUCTOR', 'CENTER'].includes(updateData.role)) {
-          user.role = updateData.role;
-        } else {
-          throw new BadRequestException('허용되지 않는 역할입니다.');
-        }
-      } else if (user.role !== updateData.role) {
-        throw new BadRequestException('역할은 최초 1회만 설정할 수 있습니다.');
+      if (['INSTRUCTOR', 'CENTER'].includes(updateData.role)) {
+        user.role = updateData.role;
+      } else {
+        throw new BadRequestException('허용되지 않는 역할입니다.');
       }
     }
 
