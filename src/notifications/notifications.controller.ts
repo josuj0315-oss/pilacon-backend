@@ -34,4 +34,17 @@ export class NotificationsController {
             map(data => ({ data } as MessageEvent))
         );
     }
+
+    @Get('settings')
+    getSettings(@Req() req) {
+        return this.notificationsService.getSettings(req.user.id);
+    }
+
+    @Patch('settings')
+    updateSettings(@Req() req, @Req() body) {
+        // req.body is what we want, but NestJS @Body() is better. 
+        // I'll used @Req() req and then req.body if I didn't import Body.
+        // Wait, I should add Body to imports.
+        return this.notificationsService.updateSettings(req.user.id, req.body);
+    }
 }

@@ -31,6 +31,9 @@ export class NotificationSetting {
     @Column({ type: 'time', nullable: true })
     quietHoursEnd: string | null;
 
+    @Column({ type: 'json', nullable: true })
+    settings: any;
+
     @CreateDateColumn()
     createdAt: Date;
 

@@ -10,6 +10,7 @@ import { ChatRoom } from '../chat/entities/chat-room.entity';
 import { ChatMessage } from '../chat/entities/chat-message.entity';
 import { ChatParticipant } from '../chat/entities/chat-participant.entity';
 import { Favorite } from '../favorites/favorite.entity';
+import { NotificationSetting } from '../notifications/entities/notification-setting.entity';
 
 @Injectable()
 export class JobsService {
@@ -20,6 +21,8 @@ export class JobsService {
         private applicationRepository: Repository<Application>,
         @InjectRepository(Favorite)
         private favoriteRepository: Repository<Favorite>,
+        @InjectRepository(NotificationSetting)
+        private notificationSettingRepository: Repository<NotificationSetting>,
         private notificationsService: NotificationsService,
         private dataSource: DataSource,
     ) { }
@@ -69,6 +72,10 @@ export class JobsService {
         const saved = await this.jobsRepository.save(newJob);
         const result = await this.findOne(saved.id);
         if (!result) throw new Error('Failed to create and reload job');
+
+        // 게시물 맞춤 알람 처리
+        await this.handleNewJobNotifications(result);
+
         return result;
     }
 
@@ -314,6 +321,55 @@ export class JobsService {
 
             // 알림 발송
             await this.handleJobClosedNotifications(saved);
+        }
+    }
+
+    private async handleNewJobNotifications(job: Job) {
+        // allowMatchingJob이 true인 모든 유저 설정 로드
+        const settings = await this.notificationSettingRepository.find({
+            where: { allowMatchingJob: true }
+        });
+
+        for (const userSetting of settings) {
+            const postsSetting = userSetting.settings?.posts;
+            if (!postsSetting) continue;
+
+            // 1. newJob 토글 확인
+            if (!postsSetting.newJob) continue;
+
+            // 2. 조건이 하나라도 있는지 확인 (지역/운동/고용형태 중 하나라도 있어야 함)
+            const hasAnyCondition =
+                (postsSetting.regions?.length || 0) > 0 ||
+                (postsSetting.workouts?.length || 0) > 0 ||
+                (postsSetting.employmentTypes?.length || 0) > 0;
+
+            if (!hasAnyCondition) continue;
+
+            // 3. 지역 매칭 (문자열 포함 방식)
+            const jobRegionStr = `${job.regionTab || ''} ${job.location || ''}`.trim();
+            const matchRegion = postsSetting.regions.length === 0 ||
+                postsSetting.regions.some(r => jobRegionStr.includes(r));
+
+            // 4. 운동 매칭
+            const matchWorkout = postsSetting.workouts.length === 0 ||
+                postsSetting.workouts.includes(job.category);
+
+            // 5. 고용형태 매칭
+            const matchType = postsSetting.employmentTypes.length === 0 ||
+                postsSetting.employmentTypes.includes(job.type);
+
+            // 모든 조건 충족 시 알림 발송
+            if (matchRegion && matchWorkout && matchType) {
+                await this.notificationsService.createNotification({
+                    receiverUserId: userSetting.userId,
+                    type: NotificationType.NEW_JOB_MATCHED,
+                    title: '맞춤 공고 알림',
+                    body: `조건에 맞는 새로운 공고가 등록되었습니다: [${job.studio}] ${job.title}`,
+                    deepLink: `/jobs/${job.id}`,
+                    resourceType: 'JOB',
+                    resourceId: job.id,
+                });
+            }
         }
     }
 }

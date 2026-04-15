@@ -9,10 +9,11 @@ import { ApplicationsModule } from '../applications/applications.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { Application } from '../applications/application.entity';
 import { Favorite } from '../favorites/favorite.entity';
+import { NotificationSetting } from '../notifications/entities/notification-setting.entity';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([Job, Application, Favorite]),
+        TypeOrmModule.forFeature([Job, Application, Favorite, NotificationSetting]),
         ApplicationsModule,
         NotificationsModule,
     ],

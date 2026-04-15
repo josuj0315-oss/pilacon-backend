@@ -38,7 +38,7 @@ export class AuthService {
     console.log('Details from strategy:', details);
 
     let user = await this.userRepository.findOneBy({
-      socialId: details.socialId,
+      providerId: details.providerId,
       provider: details.provider,
     });
 
@@ -54,10 +54,10 @@ export class AuthService {
       return user;
     }
 
-    const { socialId, provider, name, email, mobile, phone } = details;
+    const { providerId, provider, name, email, mobile, phone } = details;
 
     const newUser = this.userRepository.create({
-      socialId,
+      providerId,
       provider,
       name,
       email,
@@ -132,7 +132,7 @@ export class AuthService {
   }
 
   async getTokens(user: User) {
-    const payload = { sub: user.id, socialId: user.socialId, name: user.name, provider: user.provider };
+    const payload = { sub: user.id, providerId: user.providerId, name: user.name, provider: user.provider };
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, { expiresIn: '1h' }),

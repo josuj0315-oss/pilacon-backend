@@ -14,6 +14,7 @@ export enum NotificationType {
     NEW_APPLICATION = 'NEW_APPLICATION',
     APPLICATION_CANCELED = 'APPLICATION_CANCELED',
     APPLICATION_ACCEPTED = 'APPLICATION_ACCEPTED',
+    NEW_JOB_MATCHED = 'NEW_JOB_MATCHED',
 }
 
 export function shouldSendPush(type: NotificationType): boolean {
@@ -23,6 +24,7 @@ export function shouldSendPush(type: NotificationType): boolean {
         NotificationType.APPLICATION_ACCEPTED,
         NotificationType.APPLICATION_CANCELED,
         NotificationType.JOB_CLOSED,
+        NotificationType.NEW_JOB_MATCHED,
     ];
     return pushTypes.includes(type);
 }

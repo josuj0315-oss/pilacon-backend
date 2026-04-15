@@ -30,7 +30,7 @@ export class NaverStrategy extends PassportStrategy(Strategy, 'naver') {
         
         // 실제 데이터 추출 시 passport-naver-v2가 파싱한 필드 또는 _json 원본 데이터를 병행 확인
         const user = {
-            socialId: id,
+            providerId: id,
             provider: 'naver',
             name: name || profile._json?.response?.name,
             email: email || profile._json?.response?.email,

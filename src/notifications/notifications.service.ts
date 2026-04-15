@@ -99,4 +99,48 @@ export class NotificationsService {
             where: { receiverUserId: userId, isRead: false }
         });
     }
+
+    async getSettings(userId: number): Promise<NotificationSetting> {
+        let setting = await this.settingRepository.findOne({ where: { userId } });
+        if (!setting) {
+            setting = this.settingRepository.create({
+                userId,
+                settings: {
+                    posts: {
+                        regions: [],
+                        workouts: [],
+                        employmentTypes: [],
+                        newJob: false,
+                        deadline: false,
+                        closed: false
+                    }
+                }
+            });
+            await this.settingRepository.save(setting);
+        }
+        // Ensure settings structure exists even if record exists but settings is null
+        if (!setting.settings) {
+            setting.settings = {
+                posts: {
+                    regions: [],
+                    workouts: [],
+                    employmentTypes: [],
+                    newJob: false,
+                    deadline: false,
+                    closed: false
+                }
+            };
+        }
+        return setting;
+    }
+
+    async updateSettings(userId: number, updateData: any): Promise<NotificationSetting> {
+        let setting = await this.settingRepository.findOne({ where: { userId } });
+        if (!setting) {
+            setting = this.settingRepository.create({ userId, ...updateData });
+        } else {
+            Object.assign(setting, updateData);
+        }
+        return this.settingRepository.save(setting);
+    }
 }

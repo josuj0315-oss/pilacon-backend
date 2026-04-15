@@ -20,7 +20,7 @@ export class User {
     nickname: string | null;
 
     @Column('varchar', { length: 255, unique: true, nullable: true })
-    socialId: string | null;
+    providerId: string | null;
 
     @Column('varchar', { length: 255, nullable: true })
     provider: string | null; // 'kakao' | 'naver' | 'local'
