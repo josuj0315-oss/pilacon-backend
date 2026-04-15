@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Req, UseGuards, Query, Sse, MessageEvent } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Req, UseGuards, Query, Sse, MessageEvent, Body } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { NotificationsService } from './notifications.service';
 import { Observable, map } from 'rxjs';
@@ -41,10 +41,7 @@ export class NotificationsController {
     }
 
     @Patch('settings')
-    updateSettings(@Req() req, @Req() body) {
-        // req.body is what we want, but NestJS @Body() is better. 
-        // I'll used @Req() req and then req.body if I didn't import Body.
-        // Wait, I should add Body to imports.
-        return this.notificationsService.updateSettings(req.user.id, req.body);
+    updateSettings(@Req() req, @Body() body: any) {
+        return this.notificationsService.updateSettings(req.user.id, body);
     }
 }

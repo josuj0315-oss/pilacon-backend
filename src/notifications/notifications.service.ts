@@ -137,10 +137,9 @@ export class NotificationsService {
     async updateSettings(userId: number, updateData: any): Promise<NotificationSetting> {
         let setting = await this.settingRepository.findOne({ where: { userId } });
         if (!setting) {
-            setting = this.settingRepository.create({ userId, ...updateData });
-        } else {
-            Object.assign(setting, updateData);
+            setting = this.settingRepository.create({ userId });
         }
-        return this.settingRepository.save(setting);
+        const merged = this.settingRepository.merge(setting, updateData);
+        return this.settingRepository.save(merged);
     }
 }
