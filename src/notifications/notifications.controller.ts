@@ -1,7 +1,7 @@
-import { Controller, Get, Patch, Param, Req, UseGuards, Query, Sse, MessageEvent, Body } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Req, UseGuards, Query, Sse, MessageEvent, Body, Header } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { NotificationsService } from './notifications.service';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
 
 @Controller('notifications')
 @UseGuards(AuthGuard('jwt'))
@@ -29,10 +29,11 @@ export class NotificationsController {
     }
 
     @Sse('stream')
+    @Header('Cache-Control', 'no-cache, no-transform')
+    @Header('Connection', 'keep-alive')
+    @Header('X-Accel-Buffering', 'no')
     stream(@Req() req): Observable<MessageEvent> {
-        return this.notificationsService.eventStream(req.user.id).pipe(
-            map(data => ({ data } as MessageEvent))
-        );
+        return this.notificationsService.eventStream(req.user.id);
     }
 
     @Get('settings')

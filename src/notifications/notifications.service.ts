@@ -3,8 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DeepPartial, Repository } from 'typeorm';
 import { Notification, NotificationType, shouldSendPush } from './entities/notification.entity';
 import { NotificationSetting } from './entities/notification-setting.entity';
-import { Subject, Observable } from 'rxjs';
+import { Subject, Observable, interval, merge } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
+import { MessageEvent } from '@nestjs/common';
 
 interface NotificationEvent {
     receiverUserId: number;
@@ -25,11 +26,17 @@ export class NotificationsService {
     ) { }
 
     // SSE 스트림
-    eventStream(userId: number): Observable<any> {
-        return this.notificationSubject.asObservable().pipe(
+    eventStream(userId: number): Observable<MessageEvent> {
+        const notification$ = this.notificationSubject.asObservable().pipe(
             filter(event => event.receiverUserId === userId),
             map(event => ({ data: event.data }))
         );
+
+        const heartbeat$ = interval(25000).pipe(
+            map(() => ({ type: 'heartbeat', data: { ok: true } } as MessageEvent))
+        );
+
+        return merge(notification$, heartbeat$);
     }
 
     async createNotification(params: {
