@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DeepPartial, Repository } from 'typeorm';
 import { Notification, NotificationType, shouldSendPush } from './entities/notification.entity';
 import { NotificationSetting } from './entities/notification-setting.entity';
 import { Subject, Observable } from 'rxjs';
@@ -10,6 +10,8 @@ interface NotificationEvent {
     receiverUserId: number;
     data: Notification;
 }
+
+type NotificationSettingUpdate = DeepPartial<NotificationSetting>;
 
 @Injectable()
 export class NotificationsService {
@@ -134,12 +136,12 @@ export class NotificationsService {
         return setting;
     }
 
-    async updateSettings(userId: number, updateData: any): Promise<NotificationSetting> {
-        let setting = await this.settingRepository.findOne({ where: { userId } });
+    async updateSettings(userId: number, updateData: NotificationSettingUpdate): Promise<NotificationSetting> {
+        let setting: NotificationSetting | null = await this.settingRepository.findOne({ where: { userId } });
         if (!setting) {
-            setting = this.settingRepository.create({ userId });
+            setting = this.settingRepository.create({ userId } as NotificationSettingUpdate);
         }
-        const merged = this.settingRepository.merge(setting, updateData);
-        return this.settingRepository.save(merged);
+        const merged: NotificationSetting = this.settingRepository.merge(setting, updateData);
+        return await this.settingRepository.save(merged);
     }
 }
