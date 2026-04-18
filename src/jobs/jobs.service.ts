@@ -157,6 +157,27 @@ export class JobsService {
         return saved;
     }
 
+    private isRegionMatch(selectedRegions: string[] = [], job: Job): boolean {
+        if (!selectedRegions.length || selectedRegions.includes('전국')) return true;
+
+        const jobAddr = `${job.address || ''} ${job.centerTempAddress || ''}`.trim().toLowerCase();
+        const jobRegion = String(job.location || '').toLowerCase();
+        const jobTab = String(job.regionTab || '').toLowerCase();
+        const fullSpec = [jobTab, jobRegion].filter(Boolean).join(' ').trim();
+
+        return selectedRegions.some((selected) => {
+            const target = String(selected || '').toLowerCase().trim();
+            if (!target) return false;
+
+            if (target.endsWith('전체')) {
+                const tabName = target.split(' ')[0];
+                return jobTab === tabName || jobAddr.startsWith(tabName);
+            }
+
+            return fullSpec === target || jobRegion === target || jobAddr.includes(target);
+        });
+    }
+
     private async handleJobClosedNotifications(job: Job) {
         // 1. 지원자들에게 알림 (JOB_CLOSED)
         const applications = await this.applicationRepository.find({
@@ -329,10 +350,23 @@ export class JobsService {
         const settings = await this.notificationSettingRepository.find({
             where: { allowMatchingJob: true }
         });
+        const matchedUserIds: number[] = [];
+
+        console.log('[MATCH_NOTIFICATION_START]', {
+            jobId: job.id,
+            regionTab: job.regionTab,
+            location: job.location,
+            category: job.category,
+            type: job.type,
+        });
+        console.log('[MATCH_TARGET_USERS]', settings.map((setting) => setting.userId));
 
         for (const userSetting of settings) {
             const postsSetting = userSetting.settings?.posts;
             if (!postsSetting) continue;
+
+            // 게시물 알림 전체 스위치가 꺼져 있으면 매칭하지 않음
+            if (!postsSetting.on) continue;
 
             // 1. newJob 토글 확인
             if (!postsSetting.newJob) continue;
@@ -345,10 +379,8 @@ export class JobsService {
 
             if (!hasAnyCondition) continue;
 
-            // 3. 지역 매칭 (문자열 포함 방식)
-            const jobRegionStr = `${job.regionTab || ''} ${job.location || ''}`.trim();
-            const matchRegion = postsSetting.regions.length === 0 ||
-                postsSetting.regions.some(r => jobRegionStr.includes(r));
+            // 3. 지역 매칭
+            const matchRegion = this.isRegionMatch(postsSetting.regions || [], job);
 
             // 4. 운동 매칭
             const matchWorkout = postsSetting.workouts.length === 0 ||
@@ -360,6 +392,7 @@ export class JobsService {
 
             // 모든 조건 충족 시 알림 발송
             if (matchRegion && matchWorkout && matchType) {
+                matchedUserIds.push(userSetting.userId);
                 await this.notificationsService.createNotification({
                     receiverUserId: userSetting.userId,
                     type: NotificationType.NEW_JOB_MATCHED,
@@ -371,5 +404,10 @@ export class JobsService {
                 });
             }
         }
+
+        console.log('[MATCHED_USERS]', {
+            jobId: job.id,
+            matchedUserIds,
+        });
     }
 }
