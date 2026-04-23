@@ -178,6 +178,17 @@ export class JobsService {
         });
     }
 
+    private normalizeEmploymentType(value: string | null | undefined): string {
+        const normalized = String(value || '').trim().toLowerCase();
+
+        if (!normalized) return '';
+        if (['sub', '대타', '대타/급구'].includes(normalized)) return 'sub';
+        if (['short', '단기'].includes(normalized)) return 'short';
+        if (['regular', '정규직'].includes(normalized)) return 'regular';
+
+        return normalized;
+    }
+
     private async handleJobClosedNotifications(job: Job) {
         // 1. 지원자들에게 알림 (JOB_CLOSED)
         const applications = await this.applicationRepository.find({
@@ -387,8 +398,11 @@ export class JobsService {
                 postsSetting.workouts.includes(job.category);
 
             // 5. 고용형태 매칭
-            const matchType = postsSetting.employmentTypes.length === 0 ||
-                postsSetting.employmentTypes.includes(job.type);
+            const selectedEmploymentTypes = (postsSetting.employmentTypes || [])
+                .map((type: string) => this.normalizeEmploymentType(type))
+                .filter(Boolean);
+            const matchType = selectedEmploymentTypes.length === 0 ||
+                selectedEmploymentTypes.includes(this.normalizeEmploymentType(job.type));
 
             // 모든 조건 충족 시 알림 발송
             if (matchRegion && matchWorkout && matchType) {
