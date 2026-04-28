@@ -1,10 +1,12 @@
-import { Injectable, OnModuleInit, Logger, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger, ConflictException, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThanOrEqual } from 'typeorm';
+import { Repository, MoreThanOrEqual, Not } from 'typeorm';
 import { User } from '../users/user.entity';
 import { Job } from '../jobs/job.entity';
 import { Report } from '../reports/report.entity';
 import { Admin } from './admin.entity';
+import { Application } from '../applications/application.entity';
+import { Favorite } from '../favorites/favorite.entity';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 
@@ -17,6 +19,8 @@ export class AdminService implements OnModuleInit {
         @InjectRepository(User) private userRepository: Repository<User>,
         @InjectRepository(Job) private jobRepository: Repository<Job>,
         @InjectRepository(Report) private reportRepository: Repository<Report>,
+        @InjectRepository(Application) private applicationRepository: Repository<Application>,
+        @InjectRepository(Favorite) private favoriteRepository: Repository<Favorite>,
         private jwtService: JwtService
     ) {}
 
@@ -107,6 +111,7 @@ export class AdminService implements OnModuleInit {
         });
 
         const recentJobs = await this.jobRepository.find({
+            where: { status: Not('deleted') },
             order: { createdAt: 'DESC' },
             take: 5,
             relations: ['center']
@@ -207,8 +212,23 @@ export class AdminService implements OnModuleInit {
 
     async getJobs() {
         return this.jobRepository.find({
+            where: { status: Not('deleted') },
             order: { createdAt: 'DESC' },
             take: 20
         });
+    }
+
+    async deleteJob(id: number) {
+        const job = await this.jobRepository.findOne({ where: { id } });
+        if (!job || job.status === 'deleted') {
+            throw new NotFoundException('Job not found');
+        }
+
+        job.status = 'deleted';
+        await this.jobRepository.save(job);
+        await this.applicationRepository.update({ jobId: id }, { status: 'closed' });
+        await this.favoriteRepository.delete({ jobId: id });
+
+        return { ok: true, id };
     }
 }

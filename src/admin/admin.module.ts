@@ -10,6 +10,8 @@ import { User } from '../users/user.entity';
 import { Job } from '../jobs/job.entity';
 import { Report } from '../reports/report.entity';
 import { Center } from '../centers/center.entity';
+import { Application } from '../applications/application.entity';
+import { Favorite } from '../favorites/favorite.entity';
 import { AdminJwtStrategy } from './guards/admin-jwt.strategy';
 import { NoticeModule } from '../notice/notice.module';
 import { PopupModule } from '../popup/popup.module';
@@ -17,7 +19,7 @@ import { PartnershipModule } from '../partnership/partnership.module';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([Admin, User, Job, Report, Center]),
+        TypeOrmModule.forFeature([Admin, User, Job, Report, Center, Application, Favorite]),
         JwtModule.registerAsync({
             imports: [ConfigModule],
             inject: [ConfigService],

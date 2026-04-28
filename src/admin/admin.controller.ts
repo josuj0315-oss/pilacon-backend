@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, UseGuards, Param, Put, Delete, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, Param, Put, Delete, ParseIntPipe, Logger } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { AuthGuard } from '@nestjs/passport';
 import { NoticeService } from '../notice/notice.service';
@@ -9,6 +9,8 @@ import { PartnershipService } from '../partnership/partnership.service';
 @Controller('admin')
 @UseGuards(AuthGuard('admin-jwt'))
 export class AdminController {
+    private readonly logger = new Logger(AdminController.name);
+
     constructor(
         private readonly adminService: AdminService,
         private readonly noticeService: NoticeService,
@@ -98,5 +100,11 @@ export class AdminController {
     @Get('jobs')
     async getJobs() {
         return this.adminService.getJobs();
+    }
+
+    @Delete('jobs/:id')
+    async deleteJob(@Param('id', ParseIntPipe) id: number) {
+        this.logger.log(`DELETE /admin/jobs/${id} reached AdminController`);
+        return this.adminService.deleteJob(id);
     }
 }
