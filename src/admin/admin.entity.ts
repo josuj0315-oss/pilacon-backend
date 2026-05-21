@@ -14,6 +14,9 @@ export class Admin {
     @Column('varchar', { length: 255, nullable: true })
     nickname: string | null;
 
+    @Column({ default: 'ADMIN' })
+    role: string;
+
     @Column('varchar', { length: 255, nullable: true })
     hashedRefreshToken: string | null;
 

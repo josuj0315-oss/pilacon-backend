@@ -25,4 +25,5 @@ export enum ReportActionResult {
   POST_DELETED = 'POST_DELETED', // 게시물 삭제
   USER_WARNED = 'USER_WARNED',   // 사용자 경고
   USER_SUSPENDED = 'USER_SUSPENDED', // 사용자 정지
+  USER_BANNED = 'USER_BANNED',   // 사용자 영구 정지
 }

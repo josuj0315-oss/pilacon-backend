@@ -24,6 +24,9 @@ export class Report {
   @Column()
   targetId: number;
 
+  @Column({ type: 'int', nullable: true })
+  targetAuthorId: number | null;
+
   @Column({ nullable: true })
   targetSnapshotTitle: string;
 

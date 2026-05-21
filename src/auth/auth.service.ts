@@ -4,6 +4,7 @@ import {
   ConflictException,
   BadRequestException,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -44,6 +45,10 @@ export class AuthService {
     } catch (err) {
       console.error('Failed to log access:', err);
     }
+  }
+
+  async findUserById(id: number): Promise<User | null> {
+    return await this.userRepository.findOneBy({ id });
   }
 
   async validateUser(details: any) {

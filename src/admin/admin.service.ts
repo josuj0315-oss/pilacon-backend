@@ -10,6 +10,7 @@ import { UserSanction } from '../users/user-sanction.entity';
 import { UserAccessLog } from '../users/user-access-log.entity';
 import { Job } from '../jobs/job.entity';
 import { Report } from '../reports/report.entity';
+import { ReportStatus } from '../reports/reports.enum';
 import { Application } from '../applications/application.entity';
 import { Favorite } from '../favorites/favorite.entity';
 import { ChatRoom } from '../chat/entities/chat-room.entity';
@@ -64,10 +65,25 @@ export class AdminService implements OnModuleInit {
         };
     }
 
+    async createAdmin(body: any) {
+        const { username, password, nickname } = body;
+        const existing = await this.adminRepository.findOne({ where: { username } });
+        if (existing) throw new ConflictException('이미 존재하는 관리자 아이디입니다.');
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newAdmin = this.adminRepository.create({
+            username,
+            password: hashedPassword,
+            nickname,
+            role: 'ADMIN'
+        });
+        return await this.adminRepository.save(newAdmin);
+    }
+
     async getStats() {
         const totalUsers = await this.userRepository.count();
         const totalJobs = await this.jobRepository.count({ where: { status: Not('deleted') } });
-        const pendingReports = await this.reportRepository.count({ where: { status: 'PENDING' } });
+        const pendingReports = await this.reportRepository.count({ where: { status: ReportStatus.PENDING } });
 
         return {
             totalUsers,

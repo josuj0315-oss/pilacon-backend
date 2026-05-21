@@ -143,7 +143,7 @@ export class ReportsService {
             type: sanctionType,
             reason: this.getReasonLabel(report.reasonCode),
             adminMemo: dto.adminMemo || '신고 처리에 따른 자동 제재',
-            durationDays: durationDays > 0 ? durationDays : null,
+            durationDays: (durationDays > 0 ? durationDays : null) as number,
           });
           await manager.save(UserSanction, sanction);
         }
