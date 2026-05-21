@@ -24,7 +24,7 @@ type PhoneVerificationSession = {
 @Injectable()
 export class AuthService {
   private readonly phoneVerificationSessions = new Map<string, PhoneVerificationSession>();
-  private readonly emailVerificationSessions = new Map<string, PhoneVerificationSession>(); // Reuse session type
+  private readonly emailVerificationSessions = new Map<string, PhoneVerificationSession>();
 
   constructor(
     @InjectRepository(User)
@@ -45,28 +45,67 @@ export class AuthService {
       console.error('Failed to log access:', err);
     }
   }
-...
+
   async validateUser(details: any) {
-...
+    let user = await this.userRepository.findOneBy({
+      providerId: details.providerId,
+      provider: details.provider,
+    });
+
+    if (user) {
+      user.name = details.name || user.name;
+      user.email = details.email || user.email;
+      return await this.userRepository.save(user);
+    }
+
+    const newUser = this.userRepository.create({
+      providerId: details.providerId,
+      provider: details.provider,
+      name: details.name,
+      email: details.email,
+      nickname: details.name || '사용자',
+      role: 'USER',
+    });
+
+    return await this.userRepository.save(newUser);
   }
 
   async signup(dto: any) {
-...
+    const { username, password, nickname } = dto;
+    const existing = await this.userRepository.findOne({ where: [{ username }, { nickname }] });
+    if (existing) throw new ConflictException('이미 존재하는 아이디 또는 닉네임입니다.');
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = this.userRepository.create({
+      username,
+      password: hashedPassword,
+      nickname,
+      provider: 'local',
+    });
+    return await this.userRepository.save(user);
   }
 
   async login(body: any) {
-...
+    const { username, password } = body;
+    const user = await this.userRepository.findOne({ where: { username } });
+    if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
+      throw new UnauthorizedException('아이디 또는 비밀번호가 일치하지 않습니다.');
+    }
+    return user;
   }
 
   async getTokens(user: User) {
-...
+    const payload = { sub: user.id, username: user.username, role: user.role };
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(payload, { expiresIn: '1h' }),
+      this.jwtService.signAsync(payload, { expiresIn: '7d' }),
+    ]);
+    return { accessToken, refreshToken };
   }
 
   async updateRefreshToken(userId: number, refreshToken: string) {
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
     await this.userRepository.update(userId, { hashedRefreshToken });
-    
-    // 접속 정보 기록 (MVP)
     await this.logAccess(userId);
   }
 
@@ -75,54 +114,65 @@ export class AuthService {
   }
 
   async refreshTokens(refreshToken: string) {
-...
+    try {
+      const decoded = await this.jwtService.verifyAsync(refreshToken);
+      const user = await this.userRepository.findOneBy({ id: decoded.sub });
+      if (!user || !user.hashedRefreshToken || !(await bcrypt.compare(refreshToken, user.hashedRefreshToken))) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+      const tokens = await this.getTokens(user);
+      await this.updateRefreshToken(user.id, tokens.refreshToken);
+      return tokens;
+    } catch (e) {
+      throw new UnauthorizedException('Refresh token expired or invalid');
+    }
   }
 
   async updateProfile(userId: number, updateData: any) {
-...
+    const user = await this.userRepository.findOneBy({ id: userId });
+    if (!user) throw new NotFoundException('User not found');
+    Object.assign(user, updateData);
+    return await this.userRepository.save(user);
   }
 
   async checkNickname(nickname: string) {
-...
+    const user = await this.userRepository.findOneBy({ nickname });
+    return { available: !user };
   }
 
   async checkUsername(username: string) {
-...
+    const user = await this.userRepository.findOneBy({ username });
+    return { available: !user };
   }
 
   async requestPhoneVerification(phone: string) {
-...
+    const code = '123456'; // MVP 수준에서는 고정값 또는 랜덤 생성
+    this.phoneVerificationSessions.set(phone, { code, expiresAt: Date.now() + 300000, requestedAt: Date.now() });
+    return { ok: true };
   }
 
   async verifyPhoneCode(phone: string, code: string) {
-...
+    const session = this.phoneVerificationSessions.get(phone);
+    if (!session || session.code !== code || session.expiresAt < Date.now()) {
+      throw new BadRequestException('인증번호가 일치하지 않거나 만료되었습니다.');
+    }
+    this.phoneVerificationSessions.delete(phone);
+    return { ok: true };
   }
 
   async requestEmailVerification(email: string) {
-...
+    const code = '123456';
+    this.emailVerificationSessions.set(email, { code, expiresAt: Date.now() + 300000, requestedAt: Date.now() });
+    return { ok: true };
   }
 
   async verifyEmailCode(email: string, code: string) {
-...
-  }
-
-  private normalizePhone(phone: string): string | null {
-...
-  }
-
-  private generateVerificationCode(): string {
-...
-  }
-
-  private getMockVerificationCode(phone: string): string {
-...
-  }
-
-  private async dispatchPhoneVerificationCode(phone: string, code: string, mode: string) {
-...
-  }
-
-  private getPhoneVerificationMode(): string {
-...
+    const session = this.emailVerificationSessions.get(email);
+    if (!session || session.code !== code || session.expiresAt < Date.now()) {
+      throw new BadRequestException('인증번호가 일치하지 않거나 만료되었습니다.');
+    }
+    this.emailVerificationSessions.delete(email);
+    await this.userRepository.update({ email }, { isEmailVerified: true, emailVerifiedAt: new Date() });
+    return { ok: true };
   }
 }
