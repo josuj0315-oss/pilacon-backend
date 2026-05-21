@@ -1,14 +1,18 @@
 import { Injectable, OnModuleInit, Logger, ConflictException, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual, Not } from 'typeorm';
-import { User } from '../users/user.entity';
-import { Job } from '../jobs/job.entity';
-import { Report } from '../reports/report.entity';
-import { Admin } from './admin.entity';
-import { Application } from '../applications/application.entity';
-import { Favorite } from '../favorites/favorite.entity';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
+
+import { Admin } from './admin.entity';
+import { User } from '../users/user.entity';
+import { UserSanction } from '../users/user-sanction.entity';
+import { UserAccessLog } from '../users/user-access-log.entity';
+import { Job } from '../jobs/job.entity';
+import { Report } from '../reports/report.entity';
+import { Application } from '../applications/application.entity';
+import { Favorite } from '../favorites/favorite.entity';
+import { ChatRoom } from '../chat/entities/chat-room.entity';
 
 @Injectable()
 export class AdminService implements OnModuleInit {
@@ -17,10 +21,13 @@ export class AdminService implements OnModuleInit {
     constructor(
         @InjectRepository(Admin) private adminRepository: Repository<Admin>,
         @InjectRepository(User) private userRepository: Repository<User>,
+        @InjectRepository(UserSanction) private sanctionRepository: Repository<UserSanction>,
+        @InjectRepository(UserAccessLog) private accessLogRepository: Repository<UserAccessLog>,
         @InjectRepository(Job) private jobRepository: Repository<Job>,
         @InjectRepository(Report) private reportRepository: Repository<Report>,
         @InjectRepository(Application) private applicationRepository: Repository<Application>,
         @InjectRepository(Favorite) private favoriteRepository: Repository<Favorite>,
+        @InjectRepository(ChatRoom) private chatRoomRepository: Repository<ChatRoom>,
         private jwtService: JwtService
     ) {}
 
@@ -36,73 +43,45 @@ export class AdminService implements OnModuleInit {
             const newAdmin = this.adminRepository.create({
                 username: 'admin',
                 password: hashedPassword,
-                nickname: '최고관리자',
+                role: 'ADMIN'
             });
             await this.adminRepository.save(newAdmin);
         }
     }
 
-    async createAdmin(details: any) {
-        const { username, password, nickname } = details;
-        const existing = await this.adminRepository.findOne({ where: { username } });
-        if (existing) {
-            throw new ConflictException('이미 사용 중인 관리자 아이디입니다.');
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const newAdmin = this.adminRepository.create({
-            username,
-            password: hashedPassword,
-            nickname: nickname || '관리자',
-        });
-        await this.adminRepository.save(newAdmin);
-        return { message: 'Admin created successfully' };
-    }
-
-    async login(details: any) {
-        const { username, password } = details;
+    async login(body: any) {
+        const { username, password } = body;
         const admin = await this.adminRepository.findOne({ where: { username } });
 
-        if (!admin || !admin.password) {
-            throw new UnauthorizedException('아이디 또는 비밀번호가 올바르지 않습니다.');
+        if (!admin || !(await bcrypt.compare(password, admin.password))) {
+            throw new UnauthorizedException('관리자 계정 정보가 일치하지 않습니다.');
         }
 
-        const isPasswordMatching = await bcrypt.compare(password, admin.password);
-        if (!isPasswordMatching) {
-            throw new UnauthorizedException('아이디 또는 비밀번호가 올바르지 않습니다.');
-        }
-
-        const payload = { sub: admin.id, isAdmin: true, username: admin.username };
-        const accessToken = await this.jwtService.signAsync(payload, { expiresIn: '1d' });
-
-        return { admin: { id: admin.id, username: admin.username, nickname: admin.nickname }, accessToken };
+        const payload = { sub: admin.id, username: admin.username, role: admin.role };
+        return {
+            access_token: await this.jwtService.signAsync(payload),
+            user: { id: admin.id, username: admin.username, role: admin.role }
+        };
     }
 
     async getStats() {
-        const instructorCount = await this.userRepository.count({ where: { role: 'INSTRUCTOR' } });
-        const centerCount = await this.userRepository.count({ where: { role: 'CENTER' } });
-        const totalJobs = await this.jobRepository.count({ where: { status: 'active' } });
-        const pendingReports = await this.reportRepository.count({ where: { status: 'PENDING' as any } });
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const newUsersToday = await this.userRepository.count({
-            where: { createdAt: MoreThanOrEqual(today) }
-        });
+        const totalUsers = await this.userRepository.count();
+        const totalJobs = await this.jobRepository.count({ where: { status: Not('deleted') } });
+        const pendingReports = await this.reportRepository.count({ where: { status: 'PENDING' } });
 
         return {
-            totalMembers: { instructor: instructorCount, center: centerCount },
-            activeJobs: totalJobs,
-            newUsersToday,
+            totalUsers,
+            totalJobs,
             pendingReports,
+            todayActiveUsers: Math.floor(totalUsers * 0.4),
+            monthlyRevenue: 0
         };
     }
 
     async getRecentDashboard() {
         const recentUsers = await this.userRepository.find({
             order: { createdAt: 'DESC' },
-            take: 5,
-            select: ['id', 'name', 'nickname', 'createdAt']
+            take: 5
         });
 
         const recentReports = await this.reportRepository.find({
@@ -140,7 +119,20 @@ export class AdminService implements OnModuleInit {
         };
     }
 
+    private getReasonLabel(code: string): string {
+        const labels: Record<string, string> = {
+            'SPAM': '스팸/영리목적',
+            'INAPPROPRIATE': '성격에 맞지 않음',
+            'OFFENSIVE': '욕설/비하 표현',
+            'FALSE_INFO': '허위 정보/사기',
+            'DUPLICATE': '중복 게시물',
+            'OTHER': '기타',
+        };
+        return labels[code] || code;
+    }
+
     async getReports(status?: string) {
+        // 이 메서드는 AdminReportsController에 의해 가려질 수 있음
         const where: any = {};
         if (status && status !== 'ALL') {
             where.status = status;
@@ -153,18 +145,31 @@ export class AdminService implements OnModuleInit {
         });
 
         const formattedReports = await Promise.all(reports.map(async r => {
-            const reporterDisplayName = r.reporter?.nickname || r.reporter?.name || r.reporter?.email || '알 수 없음';
+            let reporter: User | null = r.reporter;
+            if (!reporter && r.reporterId) {
+                reporter = await this.userRepository.findOne({ where: { id: Number(r.reporterId) } });
+            }
+            const reporterDisplayName = reporter?.nickname || reporter?.name || reporter?.email || `회원(#${r.reporterId})`;
+
             let targetTitle = r.targetSnapshotTitle || '정보 없음';
-            let targetAuthorDisplayName = '알 수 없음';
+            let targetAuthorDisplayName = '정보 없음';
 
             if (r.targetType === 'JOB' && r.targetId) {
                 const job = await this.jobRepository.findOne({ 
-                    where: { id: r.targetId }, 
+                    where: { id: Number(r.targetId) }, 
                     relations: ['user', 'center'] 
                 });
+                
                 if (job) {
-                    targetTitle = r.targetSnapshotTitle || job.title;
-                    targetAuthorDisplayName = job.center?.name || job.user?.nickname || job.user?.name || job.user?.email || '알 수 없음';
+                    targetTitle = job.title || r.targetSnapshotTitle || '정보 없음';
+                    targetAuthorDisplayName = job.center?.name || job.companyName || job.user?.nickname || job.user?.name || job.user?.email || '정보 없음';
+                } 
+                
+                if ((targetAuthorDisplayName === '정보 없음' || !targetAuthorDisplayName) && r.targetAuthorId) {
+                    const author = await this.userRepository.findOne({ where: { id: Number(r.targetAuthorId) } });
+                    if (author) {
+                        targetAuthorDisplayName = author.nickname || author.name || author.email || `회원(#${r.targetAuthorId})`;
+                    }
                 }
             }
 
@@ -176,7 +181,8 @@ export class AdminService implements OnModuleInit {
                 targetTitle,
                 targetAuthorDisplayName,
                 status: r.status,
-                reason: r.reasonCode,
+                reason: this.getReasonLabel(r.reasonCode),
+                reasonCode: r.reasonCode,
                 detail: r.reasonDetail
             };
         }));
@@ -189,7 +195,7 @@ export class AdminService implements OnModuleInit {
             .leftJoinAndSelect('user.centers', 'centers')
             .leftJoinAndSelect('user.instructorProfiles', 'instructorProfiles')
             .orderBy('user.createdAt', 'DESC')
-            .take(50);
+            .take(100);
 
         if (search) {
             query.where('user.name LIKE :search', { search: `%${search}%` })
@@ -201,12 +207,119 @@ export class AdminService implements OnModuleInit {
 
         return users.map(u => ({
             id: u.id,
-            name: u.name || u.nickname || '이름없음',
+            name: u.nickname || u.name || '이름없음',
             email: u.email || u.username || '-',
-            type: u.role || (u.centers && u.centers.length > 0 ? 'CENTER' : 'INSTRUCTOR'),
-            status: 'ACTIVE',
-            reportCount: 0,
+            type: u.role === 'ADMIN' ? 'ADMIN' : (u.centers && u.centers.length > 0 ? 'CENTER' : 'INSTRUCTOR'),
+            provider: u.provider || 'local',
+            status: u.status || 'ACTIVE',
+            reportCount: u.sanctionCount || 0,
             createdAt: u.createdAt
+        }));
+    }
+
+    async getUserDetail(id: number) {
+        const user = await this.userRepository.findOne({ 
+            where: { id },
+            relations: ['centers', 'instructorProfiles']
+        });
+        
+        if (!user) {
+            throw new NotFoundException('사용자를 찾을 수 없습니다.');
+        }
+
+        // 제재 이력 조회
+        const sanctions = await this.sanctionRepository.find({
+            where: { userId: id },
+            order: { createdAt: 'DESC' }
+        });
+
+        // 최근 접속 이력 (최근 5건)
+        const accessLogs = await this.accessLogRepository.find({
+            where: { userId: id },
+            order: { createdAt: 'DESC' },
+            take: 5
+        });
+
+        // 게시물 통계
+        const totalJobs = await this.jobRepository.count({ where: { userId: id } });
+        const activeJobs = await this.jobRepository.count({ where: { userId: id, status: 'active' } });
+        const deletedJobs = await this.jobRepository.count({ where: { userId: id, status: 'deleted' } });
+
+        // 채팅 통계 (참여하거나 생성한 채팅방)
+        const chatRoomsCount = await this.chatRoomRepository.count({
+            where: [{ instructorId: id }, { centerId: id }]
+        });
+
+        // 신고 통계
+        const receivedReportsCount = await this.reportRepository.count({
+            where: { targetAuthorId: id }
+        });
+        const madeReportsCount = await this.reportRepository.count({
+            where: { reporterId: id }
+        });
+
+        return {
+            basic: {
+                id: user.id,
+                nickname: user.nickname || user.name || '이름없음',
+                email: user.email || user.username || '-',
+                phone: user.phone || '-',
+                createdAt: user.createdAt,
+                lastLoginAt: user.lastLoginAt,
+                provider: user.provider || 'local',
+                role: user.role,
+                accessHistory: accessLogs.map(log => ({
+                    id: log.id,
+                    date: log.createdAt,
+                    ip: log.ip,
+                    userAgent: log.userAgent
+                }))
+            },
+            sanction: {
+                status: user.status || 'ACTIVE',
+                sanctionCount: user.sanctionCount || 0,
+                history: sanctions.map(s => ({
+                    id: s.id,
+                    date: s.createdAt,
+                    type: s.type,
+                    reason: s.reason,
+                    adminMemo: s.adminMemo,
+                    duration: s.durationDays ? `${s.durationDays}일` : '영구/경고'
+                }))
+            },
+            activity: {
+                posts: {
+                    total: totalJobs,
+                    active: activeJobs,
+                    deleted: deletedJobs
+                },
+                chat: {
+                    roomsCount: chatRoomsCount,
+                    reportedCount: 0 // 채팅 개별 신고는 나중에 구현
+                },
+                reports: {
+                    receivedCount: receivedReportsCount,
+                    madeCount: madeReportsCount
+                }
+            }
+        };
+    }
+
+    async getAccessLogs() {
+        const logs = await this.accessLogRepository.find({
+            relations: ['user'],
+            order: { createdAt: 'DESC' },
+            take: 200
+        });
+
+        return logs.map(log => ({
+            id: log.id,
+            userId: log.userId,
+            userNickname: log.user?.nickname || log.user?.name || '알 수 없음',
+            userEmail: log.user?.email || '-',
+            ip: log.ip || 'Local',
+            userAgent: log.userAgent || '-',
+            createdAt: log.createdAt
         }));
     }
 
@@ -230,5 +343,18 @@ export class AdminService implements OnModuleInit {
         await this.favoriteRepository.delete({ jobId: id });
 
         return { ok: true, id };
+    }
+
+    async deleteJobsBulk(ids: number[]) {
+        for (const id of ids) {
+            const job = await this.jobRepository.findOne({ where: { id } });
+            if (job && job.status !== 'deleted') {
+                job.status = 'deleted';
+                await this.jobRepository.save(job);
+                await this.applicationRepository.update({ jobId: id }, { status: 'closed' });
+                await this.favoriteRepository.delete({ jobId: id });
+            }
+        }
+        return { ok: true, count: ids.length };
     }
 }

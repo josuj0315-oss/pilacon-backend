@@ -7,11 +7,14 @@ import { AdminAuthController } from './admin-auth.controller';
 import { AdminService } from './admin.service';
 import { Admin } from './admin.entity';
 import { User } from '../users/user.entity';
+import { UserSanction } from '../users/user-sanction.entity';
+import { UserAccessLog } from '../users/user-access-log.entity';
 import { Job } from '../jobs/job.entity';
 import { Report } from '../reports/report.entity';
 import { Center } from '../centers/center.entity';
 import { Application } from '../applications/application.entity';
 import { Favorite } from '../favorites/favorite.entity';
+import { ChatRoom } from '../chat/entities/chat-room.entity';
 import { AdminJwtStrategy } from './guards/admin-jwt.strategy';
 import { NoticeModule } from '../notice/notice.module';
 import { PopupModule } from '../popup/popup.module';
@@ -19,7 +22,7 @@ import { PartnershipModule } from '../partnership/partnership.module';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([Admin, User, Job, Report, Center, Application, Favorite]),
+        TypeOrmModule.forFeature([Admin, User, UserSanction, UserAccessLog, Job, Report, Center, Application, Favorite, ChatRoom]),
         JwtModule.registerAsync({
             imports: [ConfigModule],
             inject: [ConfigService],

@@ -4,6 +4,7 @@ import { Repository, DataSource } from 'typeorm';
 import { Report } from './report.entity';
 import { Job } from '../jobs/job.entity';
 import { User } from '../users/user.entity';
+import { UserSanction } from '../users/user-sanction.entity';
 import { ReportTargetType, ReportStatus, ReportActionResult, ReportReasonCode } from './reports.enum';
 import { CreateReportDto } from './dto/create-report.dto';
 import { UpdateReportAdminDto } from './dto/update-report-admin.dto';
@@ -15,6 +16,10 @@ export class ReportsService {
     private readonly reportsRepository: Repository<Report>,
     @InjectRepository(Job)
     private readonly jobsRepository: Repository<Job>,
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
+    @InjectRepository(UserSanction)
+    private readonly sanctionRepository: Repository<UserSanction>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -53,17 +58,18 @@ export class ReportsService {
     }
 
     // 6. 신고 생성 및 스냅샷 저장
-    const report = this.reportsRepository.create({
+    const newReport: Partial<Report> = {
       reporterId,
       targetType: dto.targetType,
       targetId: dto.targetId,
+      targetAuthorId: job.userId as number,
       targetSnapshotTitle: job.title,
       reasonCode: dto.reasonCode,
       reasonDetail: dto.reasonDetail,
       status: ReportStatus.PENDING,
-      actionResult: ReportActionResult.NONE,
-    });
+    };
 
+    const report = this.reportsRepository.create(newReport);
     return this.reportsRepository.save(report);
   }
 
@@ -106,24 +112,118 @@ export class ReportsService {
         }
       }
 
+      // 3. 사용자 제재 처리 연동 (경고, 정지, 영구정지)
+      if (report.targetAuthorId && [ReportActionResult.USER_WARNED, ReportActionResult.USER_SUSPENDED, ReportActionResult.USER_BANNED].includes(dto.actionResult)) {
+        const user = await manager.findOne(User, { where: { id: report.targetAuthorId } });
+        if (user) {
+          let sanctionType = '';
+          let durationDays = 0;
+          let userStatus = 'ACTIVE';
+
+          if (dto.actionResult === ReportActionResult.USER_WARNED) {
+            sanctionType = 'WARNING';
+            userStatus = 'WARNED';
+          } else if (dto.actionResult === ReportActionResult.USER_SUSPENDED) {
+            sanctionType = 'SUSPENSION_7';
+            durationDays = 7;
+            userStatus = 'SUSPENDED';
+          } else if (dto.actionResult === ReportActionResult.USER_BANNED) {
+            sanctionType = 'BAN';
+            userStatus = 'BANNED';
+          }
+
+          // 유저 상태 및 누적 횟수 업데이트
+          user.status = userStatus;
+          user.sanctionCount = (user.sanctionCount || 0) + 1;
+          await manager.save(User, user);
+
+          // 제재 이력 생성
+          const sanction = manager.create(UserSanction, {
+            userId: user.id,
+            type: sanctionType,
+            reason: this.getReasonLabel(report.reasonCode),
+            adminMemo: dto.adminMemo || '신고 처리에 따른 자동 제재',
+            durationDays: durationDays > 0 ? durationDays : null,
+          });
+          await manager.save(UserSanction, sanction);
+        }
+      }
+
       return await manager.save(Report, report);
     });
   }
 
-  async findAllAdmin(query: any): Promise<Report[]> {
+  private getReasonLabel(code: string): string {
+    const labels: Record<string, string> = {
+        'SPAM': '스팸/영리목적',
+        'INAPPROPRIATE': '성격에 맞지 않음',
+        'OFFENSIVE': '욕설/비하 표현',
+        'FALSE_INFO': '허위 정보/사기',
+        'DUPLICATE': '중복 게시물',
+        'OTHER': '기타',
+    };
+    return labels[code] || code;
+  }
+
+  async findAllAdmin(query: any): Promise<any[]> {
     const { status } = query;
     const where: any = {};
 
-    // status가 존재하고 'ALL'이 아닐 때만 필터링 적용
     if (status && status !== 'ALL' && Object.values(ReportStatus).includes(status as ReportStatus)) {
       where.status = status;
     }
 
-    return this.reportsRepository.find({
+    const reports = await this.reportsRepository.find({
       where,
       order: { createdAt: 'DESC' },
       relations: ['reporter'],
     });
+
+    return Promise.all(reports.map(async r => {
+      let reporter: User | null = r.reporter;
+      if (!reporter && r.reporterId) {
+          reporter = await this.usersRepository.findOne({ where: { id: Number(r.reporterId) } });
+      }
+      const reporterDisplayName = reporter?.nickname || reporter?.name || reporter?.email || `회원(#${r.reporterId})`;
+
+      let targetTitle = r.targetSnapshotTitle || '정보 없음';
+      let targetAuthorDisplayName = '정보 없음';
+
+      if (r.targetType === 'JOB' && r.targetId) {
+          const job = await this.jobsRepository.findOne({ 
+              where: { id: Number(r.targetId) }, 
+              relations: ['user', 'center'] 
+          });
+          
+          if (job) {
+              targetTitle = job.title || r.targetSnapshotTitle || '정보 없음';
+              targetAuthorDisplayName = job.center?.name || job.companyName || job.user?.nickname || job.user?.name || job.user?.email || '정보 없음';
+          } 
+          
+          if ((targetAuthorDisplayName === '정보 없음' || !targetAuthorDisplayName) && r.targetAuthorId) {
+              const author = await this.usersRepository.findOne({ where: { id: Number(r.targetAuthorId) } });
+              if (author) {
+                  targetAuthorDisplayName = author.nickname || author.name || author.email || `회원(#${r.targetAuthorId})`;
+              }
+          }
+      }
+
+      return {
+          id: r.id,
+          createdAt: r.createdAt,
+          type: r.targetType === 'JOB' ? '게시물' : '사용자',
+          targetId: r.targetId,
+          reporterDisplayName,
+          targetTitle,
+          targetAuthorDisplayName,
+          status: r.status,
+          reason: this.getReasonLabel(r.reasonCode as string),
+          reasonCode: r.reasonCode,
+          detail: r.reasonDetail,
+          adminMemo: r.adminMemo,
+          actionResult: r.actionResult
+      };
+    }));
   }
 
   async findOneAdmin(id: number): Promise<Report> {

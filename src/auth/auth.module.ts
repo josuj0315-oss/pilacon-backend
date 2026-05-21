@@ -6,14 +6,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { User } from '../users/user.entity';
+import { UserAccessLog } from '../users/user-access-log.entity';
 import { KakaoStrategy } from './strategies/kakao.strategy';
 import { NaverStrategy } from './strategies/naver.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { MailModule } from '../mail/mail.module';
+import { KakaoAuthGuard, NaverAuthGuard } from './guards/oauth-configured.guard';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([User]),
+        TypeOrmModule.forFeature([User, UserAccessLog]),
         PassportModule,
         JwtModule.registerAsync({
             imports: [ConfigModule],
@@ -25,7 +27,7 @@ import { MailModule } from '../mail/mail.module';
         }),
         MailModule,
     ],
-    providers: [AuthService, KakaoStrategy, NaverStrategy, JwtStrategy],
+    providers: [AuthService, KakaoStrategy, NaverStrategy, JwtStrategy, KakaoAuthGuard, NaverAuthGuard],
     controllers: [AuthController],
 })
 export class AuthModule { }

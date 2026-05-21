@@ -67,6 +67,15 @@ export class User {
     @Column({ default: 'USER' })
     role: string; // 'USER', 'ADMIN'
 
+    @Column({ default: 'ACTIVE' })
+    status: string; // 'ACTIVE', 'WARNED', 'SUSPENDED', 'BANNED'
+
+    @Column('timestamp', { nullable: true })
+    lastLoginAt: Date | null;
+
+    @Column({ default: 0 })
+    sanctionCount: number;
+
     @CreateDateColumn()
     createdAt: Date;
 }
