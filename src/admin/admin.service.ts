@@ -86,16 +86,23 @@ export class AdminService implements OnModuleInit {
     }
 
     async getStats() {
-        const totalUsers = await this.userRepository.count();
-        const totalJobs = await this.jobRepository.count({ where: { status: Not('deleted') } });
-        const pendingReports = await this.reportRepository.count({ where: { status: ReportStatus.PENDING } });
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const [totalUsers, instructorCount, centerCount, activeJobs, newUsersToday, pendingReports] = await Promise.all([
+            this.userRepository.count(),
+            this.userRepository.count({ where: { role: 'INSTRUCTOR' } }),
+            this.userRepository.count({ where: { role: 'CENTER' } }),
+            this.jobRepository.count({ where: { status: 'active' } }),
+            this.userRepository.count({ where: { createdAt: MoreThanOrEqual(today) } }),
+            this.reportRepository.count({ where: { status: ReportStatus.PENDING } }),
+        ]);
 
         return {
-            totalUsers,
-            totalJobs,
+            totalMembers: { instructor: instructorCount, center: centerCount },
+            activeJobs,
+            newUsersToday,
             pendingReports,
-            todayActiveUsers: Math.floor(totalUsers * 0.4),
-            monthlyRevenue: 0
         };
     }
 
