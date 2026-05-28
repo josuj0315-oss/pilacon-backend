@@ -21,3 +21,4 @@ lerna-debug.log*
 env/
 !env/.example.env
 /env/
+env(참조용)/

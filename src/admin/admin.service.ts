@@ -39,8 +39,13 @@ export class AdminService implements OnModuleInit {
     private async seedInitialAdmin() {
         const adminUser = await this.adminRepository.findOne({ where: { username: 'admin' } });
         if (!adminUser) {
-            this.logger.log('Seeding initial admin user into admins table: admin / admin1234');
-            const hashedPassword = await bcrypt.hash('admin1234', 10);
+            const seedPassword = process.env.ADMIN_SEED_PASSWORD;
+            if (!seedPassword) {
+                this.logger.error('ADMIN_SEED_PASSWORD is not set. Skipping admin seed.');
+                return;
+            }
+            this.logger.log('Seeding initial admin user into admins table.');
+            const hashedPassword = await bcrypt.hash(seedPassword, 10);
             const newAdmin = this.adminRepository.create({
                 username: 'admin',
                 password: hashedPassword,
@@ -58,7 +63,7 @@ export class AdminService implements OnModuleInit {
             throw new UnauthorizedException('관리자 계정 정보가 일치하지 않습니다.');
         }
 
-        const payload = { sub: admin.id, username: admin.username, role: admin.role };
+        const payload = { sub: admin.id, username: admin.username, role: admin.role, isAdmin: true };
         return {
             access_token: await this.jwtService.signAsync(payload),
             user: { id: admin.id, username: admin.username, role: admin.role }
