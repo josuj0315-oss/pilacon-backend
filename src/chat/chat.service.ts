@@ -8,6 +8,7 @@ import { Application } from '../applications/application.entity';
 import { Job } from '../jobs/job.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
+import { UserBlock } from '../users/user-block.entity';
 
 @Injectable()
 export class ChatService {
@@ -20,6 +21,8 @@ export class ChatService {
         private messageRepository: Repository<ChatMessage>,
         @InjectRepository(Application)
         private applicationRepository: Repository<Application>,
+        @InjectRepository(UserBlock)
+        private blockRepository: Repository<UserBlock>,
         private notificationsService: NotificationsService,
     ) { }
 
@@ -47,12 +50,23 @@ export class ChatService {
             throw new ForbiddenException('채팅방에 접근할 권한이 없습니다.');
         }
 
-        // 3. 기존 방 확인 (참여자 조합으로 확인)
+        // 3. 참여자 ID 확정
         const instructorId = application.userId;
         const centerId = job.userId;
 
         if (!instructorId || !centerId) {
             throw new NotFoundException('참여자 정보를 찾을 수 없습니다.');
+        }
+
+        // 4. 차단 여부 체크
+        const block = await this.blockRepository.findOne({
+            where: [
+                { blockerId: instructorId, blockedId: centerId },
+                { blockerId: centerId, blockedId: instructorId },
+            ],
+        });
+        if (block) {
+            throw new ForbiddenException('차단된 사용자와는 채팅할 수 없습니다.');
         }
 
         let room = await this.roomRepository.findOne({
