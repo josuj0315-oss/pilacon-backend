@@ -97,6 +97,16 @@ export class AdminController {
         return this.adminService.getUsers(search);
     }
 
+    @Get('users/:id')
+    async getUserDetail(@Param('id', ParseIntPipe) id: number) {
+        return this.adminService.getUserDetail(id);
+    }
+
+    @Get('logs')
+    async getAccessLogs() {
+        return this.adminService.getAccessLogs();
+    }
+
     @Get('jobs')
     async getJobs() {
         return this.adminService.getJobs();
