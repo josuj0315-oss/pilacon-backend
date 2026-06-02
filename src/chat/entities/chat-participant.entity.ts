@@ -25,6 +25,9 @@ export class ChatParticipant {
     @Column({ type: 'varchar', length: 255, nullable: true })
     role: string | null; // 'center' | 'instructor'
 
+    @Column({ type: 'timestamp', nullable: true })
+    lastReadAt: Date | null;
+
     @CreateDateColumn()
     joinedAt: Date;
 }

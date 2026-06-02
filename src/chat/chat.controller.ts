@@ -22,6 +22,11 @@ export class ChatController {
         return this.chatService.getRoomMessages(req.user.id, +roomId);
     }
 
+    @Post('rooms/:roomId/read')
+    markAsRead(@Req() req, @Param('roomId') roomId: string) {
+        return this.chatService.markAsRead(req.user.id, +roomId);
+    }
+
     @Post('rooms/:roomId/messages')
     sendMessage(
         @Req() req,

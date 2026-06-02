@@ -147,14 +147,23 @@ export class ChatService {
         return rooms.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
     }
 
-    async getRoomMessages(userId: number, roomId: number) {
-        const participant = await this.participantRepository.findOne({
-            where: { roomId, userId },
-        });
+    async markAsRead(userId: number, roomId: number): Promise<void> {
+        await this.participantRepository.update(
+            { roomId, userId },
+            { lastReadAt: new Date() },
+        );
+    }
 
-        if (!participant) {
+    async getRoomMessages(userId: number, roomId: number) {
+        const participants = await this.participantRepository.find({ where: { roomId } });
+        const myParticipant = participants.find(p => p.userId === userId);
+
+        if (!myParticipant) {
             throw new ForbiddenException('해당 채팅방의 메시지를 볼 수 없습니다.');
         }
+
+        const otherParticipant = participants.find(p => p.userId !== userId);
+        const otherLastReadAt = otherParticipant?.lastReadAt ?? null;
 
         const messages = await this.messageRepository.find({
             where: { roomId },
@@ -166,7 +175,14 @@ export class ChatService {
         const myBlocks = await this.blockRepository.find({ where: { blockerId: userId } });
         const blockedIds = new Set(myBlocks.map(b => b.blockedId));
 
-        return messages.filter(m => !blockedIds.has(m.senderUserId));
+        return messages
+            .filter(m => !blockedIds.has(m.senderUserId))
+            .map(m => ({
+                ...m,
+                isRead: m.senderUserId === userId && otherLastReadAt
+                    ? new Date(m.createdAt) <= new Date(otherLastReadAt)
+                    : false,
+            }));
     }
 
     async sendMessage(userId: number, roomId: number, content: string, type: string = 'text', imageUrl?: string, imageKey?: string) {
