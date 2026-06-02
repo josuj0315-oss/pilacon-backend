@@ -20,6 +20,12 @@ export class Admin {
     @Column('varchar', { length: 255, nullable: true })
     hashedRefreshToken: string | null;
 
+    @Column({ default: 0 })
+    loginFailCount: number;
+
+    @Column({ type: 'timestamp', nullable: true })
+    lockUntil: Date | null;
+
     @CreateDateColumn()
     createdAt: Date;
 

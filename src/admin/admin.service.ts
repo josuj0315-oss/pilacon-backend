@@ -59,15 +59,56 @@ export class AdminService implements OnModuleInit {
         const { username, password } = body;
         const admin = await this.adminRepository.findOne({ where: { username } });
 
-        if (!admin || !(await bcrypt.compare(password, admin.password))) {
+        if (!admin) {
             throw new UnauthorizedException('관리자 계정 정보가 일치하지 않습니다.');
         }
 
+        // 잠금 여부 확인
+        if (admin.lockUntil && new Date() < new Date(admin.lockUntil)) {
+            const remaining = Math.ceil((new Date(admin.lockUntil).getTime() - Date.now()) / 60000);
+            throw new UnauthorizedException(`로그인이 잠겼습니다. ${remaining}분 후 다시 시도해주세요.`);
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, admin.password);
+
+        if (!isPasswordValid) {
+            const failCount = (admin.loginFailCount || 0) + 1;
+            const updates: Partial<Admin> = { loginFailCount: failCount, lockUntil: null };
+
+            if (failCount >= 5) {
+                updates.lockUntil = new Date(Date.now() + 10 * 60 * 1000); // 10분 잠금
+                await this.adminRepository.save({ ...admin, ...updates });
+                throw new UnauthorizedException('로그인 5회 실패로 10분간 잠겼습니다.');
+            }
+
+            await this.adminRepository.save({ ...admin, ...updates });
+            throw new UnauthorizedException(`비밀번호가 틀렸습니다. (${failCount}/5)`);
+        }
+
+        // 로그인 성공 시 실패 카운트 초기화
+        await this.adminRepository.save({ ...admin, loginFailCount: 0, lockUntil: null });
+
         const payload = { sub: admin.id, username: admin.username, role: admin.role, isAdmin: true };
         return {
-            access_token: await this.jwtService.signAsync(payload),
+            access_token: await this.jwtService.signAsync(payload, { expiresIn: '8h' }),
             user: { id: admin.id, username: admin.username, role: admin.role }
         };
+    }
+
+    async changePassword(adminId: number, currentPassword: string, newPassword: string) {
+        const admin = await this.adminRepository.findOne({ where: { id: adminId } });
+        if (!admin) throw new UnauthorizedException('관리자를 찾을 수 없습니다.');
+
+        const isValid = await bcrypt.compare(currentPassword, admin.password);
+        if (!isValid) throw new UnauthorizedException('현재 비밀번호가 올바르지 않습니다.');
+
+        if (newPassword.length < 8) {
+            throw new ConflictException('새 비밀번호는 8자 이상이어야 합니다.');
+        }
+
+        admin.password = await bcrypt.hash(newPassword, 10);
+        await this.adminRepository.save(admin);
+        return { ok: true };
     }
 
     async createAdmin(body: any) {
