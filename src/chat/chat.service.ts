@@ -173,6 +173,20 @@ export class ChatService {
             throw new ForbiddenException('메시지를 보낼 권한이 없습니다.');
         }
 
+        // 차단 여부 체크 (양방향)
+        const room = await this.roomRepository.findOne({ where: { id: roomId } });
+        if (room?.instructorId && room?.centerId) {
+            const block = await this.blockRepository.findOne({
+                where: [
+                    { blockerId: room.instructorId, blockedId: room.centerId },
+                    { blockerId: room.centerId, blockedId: room.instructorId },
+                ],
+            });
+            if (block) {
+                throw new ForbiddenException('차단된 사용자와는 메시지를 주고받을 수 없습니다.');
+            }
+        }
+
         const message = this.messageRepository.create({
             roomId,
             senderUserId: userId,
