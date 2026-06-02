@@ -22,6 +22,7 @@ import { NoticeModule } from './notice/notice.module';
 import { AdminModule } from './admin/admin.module';
 import { PopupModule } from './popup/popup.module';
 import { PartnershipModule } from './partnership/partnership.module';
+import { LegalModule } from './legal/legal.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { PartnershipModule } from './partnership/partnership.module';
     AdminModule,
     PopupModule,
     PartnershipModule,
+    LegalModule,
   ],
   controllers: [AppController],
   providers: [AppService],
