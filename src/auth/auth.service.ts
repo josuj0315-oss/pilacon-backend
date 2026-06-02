@@ -58,6 +58,12 @@ export class AuthService {
     });
 
     if (user) {
+      if (user.status === 'BANNED') {
+        throw new UnauthorizedException('영구 정지된 계정입니다. 고객센터에 문의해 주세요.');
+      }
+      if (user.status === 'SUSPENDED') {
+        throw new UnauthorizedException('일시 정지된 계정입니다. 고객센터에 문의해 주세요.');
+      }
       user.name = details.name || user.name;
       user.email = details.email || user.email;
       return await this.userRepository.save(user);
@@ -95,6 +101,12 @@ export class AuthService {
     const user = await this.userRepository.findOne({ where: { username } });
     if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('아이디 또는 비밀번호가 일치하지 않습니다.');
+    }
+    if (user.status === 'BANNED') {
+      throw new UnauthorizedException('영구 정지된 계정입니다. 고객센터에 문의해 주세요.');
+    }
+    if (user.status === 'SUSPENDED') {
+      throw new UnauthorizedException('일시 정지된 계정입니다. 고객센터에 문의해 주세요.');
     }
     return user;
   }
