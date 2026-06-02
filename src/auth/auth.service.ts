@@ -102,6 +102,9 @@ export class AuthService {
     if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('아이디 또는 비밀번호가 일치하지 않습니다.');
     }
+    if (user.status === 'DELETED') {
+      throw new UnauthorizedException('탈퇴한 계정입니다.');
+    }
     if (user.status === 'BANNED') {
       throw new UnauthorizedException('영구 정지된 계정입니다. 고객센터에 문의해 주세요.');
     }
@@ -128,6 +131,25 @@ export class AuthService {
 
   async removeRefreshToken(userId: number) {
     await this.userRepository.update(userId, { hashedRefreshToken: null } as any);
+  }
+
+  async deleteAccount(userId: number): Promise<void> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) return;
+
+    await this.userRepository.update(userId, {
+      status: 'DELETED',
+      username: null,
+      password: null,
+      nickname: `탈퇴회원`,
+      name: null,
+      email: null,
+      phone: null,
+      profileImage: null,
+      providerId: null,
+      provider: null,
+      hashedRefreshToken: null,
+    } as any);
   }
 
   async refreshTokens(refreshToken: string) {

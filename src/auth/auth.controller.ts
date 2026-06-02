@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, UseGuards, Req, Res, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, UseGuards, Req, Res, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
@@ -54,6 +54,13 @@ export class AuthController {
     @UseGuards(AuthGuard('jwt'))
     async logout(@Req() req) {
         await this.authService.removeRefreshToken(req.user.id);
+        return { ok: true };
+    }
+
+    @Delete('me')
+    @UseGuards(AuthGuard('jwt'))
+    async deleteAccount(@Req() req) {
+        await this.authService.deleteAccount(req.user.id);
         return { ok: true };
     }
 
