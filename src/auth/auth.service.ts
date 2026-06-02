@@ -108,10 +108,10 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async updateRefreshToken(userId: number, refreshToken: string) {
+  async updateRefreshToken(userId: number, refreshToken: string, ip?: string, userAgent?: string) {
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
     await this.userRepository.update(userId, { hashedRefreshToken });
-    await this.logAccess(userId);
+    await this.logAccess(userId, ip, userAgent);
   }
 
   async removeRefreshToken(userId: number) {

@@ -11,10 +11,12 @@ export class AuthController {
     ) { }
 
     @Post('signup')
-    async signup(@Body() body) {
+    async signup(@Body() body, @Req() req) {
         const user = await this.authService.signup(body);
         const tokens = await this.authService.getTokens(user);
-        await this.authService.updateRefreshToken(user.id, tokens.refreshToken);
+        const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
+        const userAgent = req.headers['user-agent'];
+        await this.authService.updateRefreshToken(user.id, tokens.refreshToken, ip, userAgent);
         return { user, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken };
     }
 
@@ -39,10 +41,12 @@ export class AuthController {
     }
 
     @Post('login')
-    async login(@Body() body) {
+    async login(@Body() body, @Req() req) {
         const user = await this.authService.login(body);
         const tokens = await this.authService.getTokens(user);
-        await this.authService.updateRefreshToken(user.id, tokens.refreshToken);
+        const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
+        const userAgent = req.headers['user-agent'];
+        await this.authService.updateRefreshToken(user.id, tokens.refreshToken, ip, userAgent);
         return { user, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken };
     }
 
@@ -72,7 +76,9 @@ export class AuthController {
     async kakaoCallback(@Req() req, @Res() res) {
         const user: any = await this.authService.validateUser(req.user);
         const tokens = await this.authService.getTokens(user);
-        await this.authService.updateRefreshToken(user.id, tokens.refreshToken);
+        const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
+        const userAgent = req.headers['user-agent'];
+        await this.authService.updateRefreshToken(user.id, tokens.refreshToken, ip, userAgent);
 
         const frontendUrl = (this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173').replace(/\/$/, '');
         const finalUrl = `${frontendUrl}/login?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`;
@@ -96,7 +102,9 @@ export class AuthController {
     async naverCallback(@Req() req, @Res() res) {
         const user: any = await this.authService.validateUser(req.user);
         const tokens = await this.authService.getTokens(user);
-        await this.authService.updateRefreshToken(user.id, tokens.refreshToken);
+        const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
+        const userAgent = req.headers['user-agent'];
+        await this.authService.updateRefreshToken(user.id, tokens.refreshToken, ip, userAgent);
 
         const frontendUrl = (this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173').replace(/\/$/, '');
         const finalUrl = `${frontendUrl}/login?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`;
