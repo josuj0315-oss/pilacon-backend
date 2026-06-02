@@ -148,7 +148,6 @@ export class ChatService {
     }
 
     async getRoomMessages(userId: number, roomId: number) {
-        // 참여 여부 확인
         const participant = await this.participantRepository.findOne({
             where: { roomId, userId },
         });
@@ -157,11 +156,17 @@ export class ChatService {
             throw new ForbiddenException('해당 채팅방의 메시지를 볼 수 없습니다.');
         }
 
-        return this.messageRepository.find({
+        const messages = await this.messageRepository.find({
             where: { roomId },
             relations: ['sender'],
             order: { createdAt: 'ASC' },
         });
+
+        // 내가 차단한 유저의 메시지 필터링
+        const myBlocks = await this.blockRepository.find({ where: { blockerId: userId } });
+        const blockedIds = new Set(myBlocks.map(b => b.blockedId));
+
+        return messages.filter(m => !blockedIds.has(m.senderUserId));
     }
 
     async sendMessage(userId: number, roomId: number, content: string, type: string = 'text', imageUrl?: string, imageKey?: string) {
@@ -173,18 +178,16 @@ export class ChatService {
             throw new ForbiddenException('메시지를 보낼 권한이 없습니다.');
         }
 
-        // 차단 여부 체크 (양방향)
         const room = await this.roomRepository.findOne({ where: { id: roomId } });
+
+        // 발신자가 수신자에게 차단된 경우: 저장은 하되 수신자에게 노출 안 함
+        let isSilent = false;
         if (room?.instructorId && room?.centerId) {
+            const recipientId = room.instructorId === userId ? room.centerId : room.instructorId;
             const block = await this.blockRepository.findOne({
-                where: [
-                    { blockerId: room.instructorId, blockedId: room.centerId },
-                    { blockerId: room.centerId, blockedId: room.instructorId },
-                ],
+                where: { blockerId: recipientId, blockedId: userId },
             });
-            if (block) {
-                throw new ForbiddenException('차단된 사용자와는 메시지를 주고받을 수 없습니다.');
-            }
+            if (block) isSilent = true;
         }
 
         const message = this.messageRepository.create({
@@ -198,7 +201,9 @@ export class ChatService {
 
         const savedMessage = await this.messageRepository.save(message);
 
-        // 방의 마지막 메시지 시간 업데이트
+        // 차단된 발신자의 메시지는 lastMessageAt 갱신 및 알림 생략
+        if (isSilent) return savedMessage;
+
         await this.roomRepository.update(roomId, {
             lastMessageAt: savedMessage.createdAt,
         });
