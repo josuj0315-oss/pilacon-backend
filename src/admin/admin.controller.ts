@@ -112,6 +112,11 @@ export class AdminController {
         return this.adminService.getJobs();
     }
 
+    @Delete('jobs-bulk')
+    async deleteJobsBulk(@Body() body: { ids: number[] }) {
+        return this.adminService.deleteJobsBulk(body.ids);
+    }
+
     @Delete('jobs/:id')
     async deleteJob(@Param('id', ParseIntPipe) id: number) {
         this.logger.log(`DELETE /admin/jobs/${id} reached AdminController`);

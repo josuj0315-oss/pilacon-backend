@@ -57,6 +57,16 @@ export class AuthService {
       provider: details.provider,
     });
 
+    if (user?.status === 'DELETED') {
+      const remaining = this.getRemainingCooldownDays(user.deletedAt);
+      if (remaining > 0) {
+        throw new UnauthorizedException(`탈퇴한 계정입니다. ${remaining}일 후 재가입 가능합니다.`);
+      }
+      // 30일 경과 → 식별자 익명화 후 신규 계정으로 처리
+      await this.userRepository.update(user.id, { username: null, email: null, providerId: null, provider: null } as any);
+      user = null;
+    }
+
     if (user) {
       if (user.status === 'BANNED') {
         throw new UnauthorizedException('영구 정지된 계정입니다. 고객센터에 문의해 주세요.');
@@ -67,6 +77,19 @@ export class AuthService {
       user.name = details.name || user.name;
       user.email = details.email || user.email;
       return await this.userRepository.save(user);
+    }
+
+    // 같은 이메일로 탈퇴한 계정이 있는지 추가 체크
+    if (details.email) {
+      const deletedByEmail = await this.userRepository.findOne({
+        where: { email: details.email, status: 'DELETED' },
+      });
+      if (deletedByEmail) {
+        const remaining = this.getRemainingCooldownDays(deletedByEmail.deletedAt);
+        if (remaining > 0) {
+          throw new UnauthorizedException(`탈퇴한 계정입니다. ${remaining}일 후 재가입 가능합니다.`);
+        }
+      }
     }
 
     const newUser = this.userRepository.create({
@@ -83,6 +106,17 @@ export class AuthService {
 
   async signup(dto: any) {
     const { username, password, nickname } = dto;
+
+    const deletedUser = await this.userRepository.findOne({ where: { username, status: 'DELETED' } });
+    if (deletedUser) {
+      const remaining = this.getRemainingCooldownDays(deletedUser.deletedAt);
+      if (remaining > 0) {
+        throw new ConflictException(`탈퇴한 계정입니다. ${remaining}일 후 재가입 가능합니다.`);
+      }
+      // 30일 경과 → username 반납
+      await this.userRepository.update(deletedUser.id, { username: null } as any);
+    }
+
     const existing = await this.userRepository.findOne({ where: [{ username }, { nickname }] });
     if (existing) throw new ConflictException('이미 존재하는 아이디 또는 닉네임입니다.');
 
@@ -99,11 +133,17 @@ export class AuthService {
   async login(body: any) {
     const { username, password } = body;
     const user = await this.userRepository.findOne({ where: { username } });
-    if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
+
+    if (user?.status === 'DELETED') {
+      const remaining = this.getRemainingCooldownDays(user.deletedAt);
+      if (remaining > 0) {
+        throw new UnauthorizedException(`탈퇴한 계정입니다. ${remaining}일 후 재가입 가능합니다.`);
+      }
       throw new UnauthorizedException('아이디 또는 비밀번호가 일치하지 않습니다.');
     }
-    if (user.status === 'DELETED') {
-      throw new UnauthorizedException('탈퇴한 계정입니다.');
+
+    if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
+      throw new UnauthorizedException('아이디 또는 비밀번호가 일치하지 않습니다.');
     }
     if (user.status === 'BANNED') {
       throw new UnauthorizedException('영구 정지된 계정입니다. 고객센터에 문의해 주세요.');
@@ -133,21 +173,25 @@ export class AuthService {
     await this.userRepository.update(userId, { hashedRefreshToken: null } as any);
   }
 
+  private getRemainingCooldownDays(deletedAt: Date | null): number {
+    if (!deletedAt) return 0;
+    const daysSince = Math.floor((Date.now() - new Date(deletedAt).getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(0, 30 - daysSince);
+  }
+
   async deleteAccount(userId: number): Promise<void> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) return;
 
+    // 식별자(username, email, providerId, provider)는 30일간 보존 후 익명화
     await this.userRepository.update(userId, {
       status: 'DELETED',
-      username: null,
+      deletedAt: new Date(),
       password: null,
-      nickname: `탈퇴회원`,
+      nickname: '탈퇴회원',
       name: null,
-      email: null,
       phone: null,
       profileImage: null,
-      providerId: null,
-      provider: null,
       hashedRefreshToken: null,
     } as any);
   }
