@@ -25,6 +25,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         if (!user) {
             throw new UnauthorizedException('User not found');
         }
+        if (user.status === 'SUSPENDED') {
+            throw new UnauthorizedException('일시 정지된 계정입니다. 고객센터에 문의해 주세요.');
+        }
+        if (user.status === 'BANNED') {
+            throw new UnauthorizedException('영구 정지된 계정입니다. 고객센터에 문의해 주세요.');
+        }
         return user;
     }
 }

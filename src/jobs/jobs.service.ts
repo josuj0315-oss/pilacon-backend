@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository, LessThan, Not, Between } from 'typeorm';
+import { DataSource, Repository, LessThan, Not, In, Between } from 'typeorm';
 import { Job } from './job.entity';
 import { Application } from '../applications/application.entity';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -29,10 +29,10 @@ export class JobsService {
 
     async findAll(): Promise<Job[]> {
         return this.jobsRepository.find({
-            where: { status: Not('deleted') },
+            where: { status: Not(In(['deleted', 'hidden'])) },
             relations: ['user', 'center'],
             order: {
-                status: 'ASC', // 'active' < 'closed' (alphabetical order works here)
+                status: 'ASC',
                 createdAt: 'DESC',
             },
         });
@@ -46,6 +46,9 @@ export class JobsService {
         if (job) {
             if (job.status === 'deleted') {
                 throw new NotFoundException('Deleted job');
+            }
+            if (job.status === 'hidden') {
+                throw new ForbiddenException('HIDDEN');
             }
             job.views = (job.views || 0) + 1;
             await this.jobsRepository.save(job);

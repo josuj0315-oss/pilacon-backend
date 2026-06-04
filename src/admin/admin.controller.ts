@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, UseGuards, Param, Put, Delete, ParseIntPipe, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Query, UseGuards, Param, Put, Delete, ParseIntPipe, Logger } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { AuthGuard } from '@nestjs/passport';
 import { NoticeService } from '../notice/notice.service';
@@ -100,6 +100,11 @@ export class AdminController {
     @Get('users/:id')
     async getUserDetail(@Param('id', ParseIntPipe) id: number) {
         return this.adminService.getUserDetail(id);
+    }
+
+    @Patch('users/:id/status')
+    async updateUserStatus(@Param('id', ParseIntPipe) id: number, @Body() body: { status?: string }) {
+        return this.adminService.updateUserStatus(id, body.status);
     }
 
     @Get('logs')

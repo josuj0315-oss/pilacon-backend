@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual, Not } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
+import { Cron } from '@nestjs/schedule';
 
 import { Admin } from './admin.entity';
 import { User } from '../users/user.entity';
@@ -425,5 +426,39 @@ export class AdminService implements OnModuleInit {
             }
         }
         return { ok: true, count: ids.length };
+    }
+
+    // B-2: 수동 상태 변경 (제재 해제 포함)
+    async updateUserStatus(userId: number, status?: string) {
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+        if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다.');
+
+        const newStatus = status || 'ACTIVE';
+        await this.userRepository.update(userId, { status: newStatus });
+        this.logger.log(`User ${userId} status changed to ${newStatus} by admin`);
+        return { ok: true };
+    }
+
+    // B-1: 만료된 정지 자동 해제 (매시간 실행)
+    @Cron('0 * * * *')
+    async autoLiftExpiredSuspensions() {
+        const suspendedUsers = await this.userRepository.find({ where: { status: 'SUSPENDED' } });
+        if (suspendedUsers.length === 0) return;
+
+        for (const user of suspendedUsers) {
+            const latestSanction = await this.sanctionRepository.findOne({
+                where: { userId: user.id },
+                order: { createdAt: 'DESC' },
+            });
+            if (!latestSanction?.durationDays) continue;
+
+            const expireAt = new Date(
+                new Date(latestSanction.createdAt).getTime() + latestSanction.durationDays * 24 * 60 * 60 * 1000
+            );
+            if (new Date() >= expireAt) {
+                await this.userRepository.update(user.id, { status: 'ACTIVE' });
+                this.logger.log(`User ${user.id} suspension auto-lifted (expired)`);
+            }
+        }
     }
 }

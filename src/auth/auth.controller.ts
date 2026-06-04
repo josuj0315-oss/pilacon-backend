@@ -81,21 +81,17 @@ export class AuthController {
     @Get('kakao/callback')
     @UseGuards(AuthGuard('kakao'))
     async kakaoCallback(@Req() req, @Res() res) {
-        const user: any = await this.authService.validateUser(req.user);
-        const tokens = await this.authService.getTokens(user);
-        const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
-        const userAgent = req.headers['user-agent'];
-        await this.authService.updateRefreshToken(user.id, tokens.refreshToken, ip, userAgent);
-
         const frontendUrl = (this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173').replace(/\/$/, '');
-        const finalUrl = `${frontendUrl}/login?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`;
-        
-        console.log(`
---- [Backend] Kakao Login Success ---`);
-        console.log(`1. Target Frontend URL: ${frontendUrl}`);
-        console.log(`2. Final Redirect URI: ${finalUrl}`);
-
-        res.redirect(finalUrl);
+        try {
+            const user: any = await this.authService.validateUser(req.user);
+            const tokens = await this.authService.getTokens(user);
+            const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
+            const userAgent = req.headers['user-agent'];
+            await this.authService.updateRefreshToken(user.id, tokens.refreshToken, ip, userAgent);
+            res.redirect(`${frontendUrl}/login?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`);
+        } catch (e: any) {
+            res.redirect(`${frontendUrl}/login?authError=${encodeURIComponent(e.message || '로그인에 실패했습니다.')}`);
+        }
     }
 
     @Get('naver')
@@ -107,21 +103,17 @@ export class AuthController {
     @Get('naver/callback')
     @UseGuards(AuthGuard('naver'))
     async naverCallback(@Req() req, @Res() res) {
-        const user: any = await this.authService.validateUser(req.user);
-        const tokens = await this.authService.getTokens(user);
-        const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
-        const userAgent = req.headers['user-agent'];
-        await this.authService.updateRefreshToken(user.id, tokens.refreshToken, ip, userAgent);
-
         const frontendUrl = (this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173').replace(/\/$/, '');
-        const finalUrl = `${frontendUrl}/login?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`;
-
-        console.log(`
---- [Backend] Naver Login Success ---`);
-        console.log(`1. Target Frontend URL: ${frontendUrl}`);
-        console.log(`2. Final Redirect URI: ${finalUrl}`);
-
-        res.redirect(finalUrl);
+        try {
+            const user: any = await this.authService.validateUser(req.user);
+            const tokens = await this.authService.getTokens(user);
+            const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
+            const userAgent = req.headers['user-agent'];
+            await this.authService.updateRefreshToken(user.id, tokens.refreshToken, ip, userAgent);
+            res.redirect(`${frontendUrl}/login?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`);
+        } catch (e: any) {
+            res.redirect(`${frontendUrl}/login?authError=${encodeURIComponent(e.message || '로그인에 실패했습니다.')}`);
+        }
     }
 
     @Get('me')

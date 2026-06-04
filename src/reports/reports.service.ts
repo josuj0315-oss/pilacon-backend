@@ -79,41 +79,34 @@ export class ReportsService {
       throw new NotFoundException('신고 내역을 찾을 수 없습니다.');
     }
 
-    // 상태 요건 확인
     const isClosing = dto.status === ReportStatus.RESOLVED || dto.status === ReportStatus.DISMISSED;
+    // 이미 처리된 신고인지 확인 (재처리 시 sanctionCount 중복 방지)
+    const wasAlreadyProcessed = report.status === ReportStatus.RESOLVED || report.status === ReportStatus.DISMISSED;
 
     report.status = dto.status;
     report.actionResult = dto.actionResult;
     report.adminMemo = dto.adminMemo || report.adminMemo;
 
-    // 종료 상태일 때만 처리자 정보 기록
     if (isClosing) {
-      report.processedById = adminId;
       report.processedAt = new Date();
     }
 
-    // 트랜잭션으로 처리 (연관 도메인 상태 변경 포함)
     return await this.dataSource.transaction(async (manager) => {
-      // 1. 게시물 숨김 처리 연동
-      if (report.targetType === ReportTargetType.JOB && dto.actionResult === ReportActionResult.POST_HIDDEN) {
+      // 1. RESOLVED 처리 시 신고 대상 게시물 자동 블라인드
+      if (dto.status === ReportStatus.RESOLVED && report.targetType === ReportTargetType.JOB && report.targetId) {
         const job = await manager.findOne(Job, { where: { id: report.targetId } });
         if (job && job.status !== 'deleted') {
-          job.status = 'hidden';
-          await manager.save(Job, job);
-        }
-      }
-      
-      // 2. 게시물 삭제 처리 연동
-      if (report.targetType === ReportTargetType.JOB && dto.actionResult === ReportActionResult.POST_DELETED) {
-        const job = await manager.findOne(Job, { where: { id: report.targetId } });
-        if (job && job.status !== 'deleted') {
-          job.status = 'deleted';
+          job.status = dto.actionResult === ReportActionResult.POST_DELETED ? 'deleted' : 'hidden';
           await manager.save(Job, job);
         }
       }
 
-      // 3. 사용자 제재 처리 연동 (경고, 정지, 영구정지)
-      if (report.targetAuthorId && [ReportActionResult.USER_WARNED, ReportActionResult.USER_SUSPENDED, ReportActionResult.USER_BANNED].includes(dto.actionResult)) {
+      // 2. 사용자 제재 처리 (재처리 시 sanctionCount 중복 누적 방지)
+      if (
+        !wasAlreadyProcessed &&
+        report.targetAuthorId &&
+        [ReportActionResult.USER_WARNED, ReportActionResult.USER_SUSPENDED, ReportActionResult.USER_BANNED].includes(dto.actionResult)
+      ) {
         const user = await manager.findOne(User, { where: { id: report.targetAuthorId } });
         if (user) {
           let sanctionType = '';
@@ -132,12 +125,10 @@ export class ReportsService {
             userStatus = 'BANNED';
           }
 
-          // 유저 상태 및 누적 횟수 업데이트
           user.status = userStatus;
           user.sanctionCount = (user.sanctionCount || 0) + 1;
           await manager.save(User, user);
 
-          // 제재 이력 생성
           const sanction = manager.create(UserSanction, {
             userId: user.id,
             type: sanctionType,
