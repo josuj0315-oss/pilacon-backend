@@ -197,18 +197,28 @@ export class AuthService {
   }
 
   async refreshTokens(refreshToken: string) {
+    let decoded: any;
     try {
-      const decoded = await this.jwtService.verifyAsync(refreshToken);
-      const user = await this.userRepository.findOneBy({ id: decoded.sub });
-      if (!user || !user.hashedRefreshToken || !(await bcrypt.compare(refreshToken, user.hashedRefreshToken))) {
-        throw new UnauthorizedException('Invalid refresh token');
-      }
-      const tokens = await this.getTokens(user);
-      await this.updateRefreshToken(user.id, tokens.refreshToken);
-      return tokens;
+      decoded = await this.jwtService.verifyAsync(refreshToken);
     } catch (e) {
       throw new UnauthorizedException('Refresh token expired or invalid');
     }
+
+    const user = await this.userRepository.findOneBy({ id: decoded.sub });
+    if (!user || !user.hashedRefreshToken || !(await bcrypt.compare(refreshToken, user.hashedRefreshToken))) {
+      throw new UnauthorizedException('Refresh token expired or invalid');
+    }
+    // 정지/영구정지된 계정은 refresh로 세션을 계속 이어갈 수 없도록 차단
+    if (user.status === 'BANNED') {
+      throw new UnauthorizedException('영구 정지된 계정입니다. 고객센터에 문의해 주세요.');
+    }
+    if (user.status === 'SUSPENDED') {
+      throw new UnauthorizedException('일시 정지된 계정입니다. 고객센터에 문의해 주세요.');
+    }
+
+    const tokens = await this.getTokens(user);
+    await this.updateRefreshToken(user.id, tokens.refreshToken);
+    return tokens;
   }
 
   async updateProfile(userId: number, updateData: any) {

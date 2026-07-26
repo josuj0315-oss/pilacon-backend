@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, Not, In } from 'typeorm';
 import { Report } from './report.entity';
 import { Job } from '../jobs/job.entity';
 import { User } from '../users/user.entity';
 import { UserSanction } from '../users/user-sanction.entity';
-import { ReportTargetType, ReportStatus, ReportActionResult, ReportReasonCode } from './reports.enum';
+import { ReportTargetType, ReportStatus, ReportActionResult, ReportPostAction, ReportReasonCode } from './reports.enum';
 import { CreateReportDto } from './dto/create-report.dto';
 import { UpdateReportAdminDto } from './dto/update-report-admin.dto';
 
@@ -82,9 +82,11 @@ export class ReportsService {
     const isClosing = dto.status === ReportStatus.RESOLVED || dto.status === ReportStatus.DISMISSED;
     // 이미 처리된 신고인지 확인 (재처리 시 sanctionCount 중복 방지)
     const wasAlreadyProcessed = report.status === ReportStatus.RESOLVED || report.status === ReportStatus.DISMISSED;
+    const postAction = dto.postAction || ReportPostAction.NONE;
 
     report.status = dto.status;
     report.actionResult = dto.actionResult;
+    report.postAction = postAction;
     report.adminMemo = dto.adminMemo || report.adminMemo;
 
     if (isClosing) {
@@ -92,12 +94,32 @@ export class ReportsService {
     }
 
     return await this.dataSource.transaction(async (manager) => {
-      // 1. RESOLVED 처리 시 신고 대상 게시물 자동 블라인드
-      if (dto.status === ReportStatus.RESOLVED && report.targetType === ReportTargetType.JOB && report.targetId) {
+      // 1. 게시물 처리 상태를 postAction 값과 동기화 (사용자 제재와 독립적으로 동작)
+      if (report.targetType === ReportTargetType.JOB && report.targetId) {
         const job = await manager.findOne(Job, { where: { id: report.targetId } });
         if (job && job.status !== 'deleted') {
-          job.status = dto.actionResult === ReportActionResult.POST_DELETED ? 'deleted' : 'hidden';
-          await manager.save(Job, job);
+          if (postAction === ReportPostAction.HIDDEN) {
+            job.status = 'hidden';
+            await manager.save(Job, job);
+          } else if (postAction === ReportPostAction.DELETED) {
+            job.status = 'deleted';
+            await manager.save(Job, job);
+          } else if (job.status === 'hidden') {
+            // postAction이 NONE으로 바뀌면 블라인드 해제
+            // 단, 같은 게시물에 대해 여전히 숨김/삭제 조치 중인 다른 신고가 있으면 유지
+            const stillActionedByOther = await manager.count(Report, {
+              where: {
+                targetType: ReportTargetType.JOB,
+                targetId: report.targetId,
+                postAction: In([ReportPostAction.HIDDEN, ReportPostAction.DELETED]),
+                id: Not(report.id),
+              },
+            });
+            if (stillActionedByOther === 0) {
+              job.status = 'active';
+              await manager.save(Job, job);
+            }
+          }
         }
       }
 
@@ -212,7 +234,8 @@ export class ReportsService {
           reasonCode: r.reasonCode,
           detail: r.reasonDetail,
           adminMemo: r.adminMemo,
-          actionResult: r.actionResult
+          actionResult: r.actionResult,
+          postAction: r.postAction
       };
     }));
   }

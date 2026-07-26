@@ -19,11 +19,17 @@ export enum ReportStatus {
   DISMISSED = 'DISMISSED', // 기각 처리
 }
 
+// 신고 대상 사용자에 대한 제재
 export enum ReportActionResult {
   NONE = 'NONE',                 // 조치 없음
-  POST_HIDDEN = 'POST_HIDDEN',   // 게시물 숨김
-  POST_DELETED = 'POST_DELETED', // 게시물 삭제
   USER_WARNED = 'USER_WARNED',   // 사용자 경고
   USER_SUSPENDED = 'USER_SUSPENDED', // 사용자 정지
   USER_BANNED = 'USER_BANNED',   // 사용자 영구 정지
+}
+
+// 신고 대상 게시물에 대한 처리 (사용자 제재와 독립적으로 선택)
+export enum ReportPostAction {
+  NONE = 'NONE',       // 그대로 두기
+  HIDDEN = 'HIDDEN',   // 게시물 숨김
+  DELETED = 'DELETED', // 게시물 삭제
 }

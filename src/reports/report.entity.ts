@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { User } from '../users/user.entity';
-import { ReportTargetType, ReportReasonCode, ReportStatus, ReportActionResult } from './reports.enum';
+import { ReportTargetType, ReportReasonCode, ReportStatus, ReportActionResult, ReportPostAction } from './reports.enum';
 
 @Entity('reports')
 @Index(['reporterId', 'targetType', 'targetId'], { unique: true })
@@ -52,6 +52,13 @@ export class Report {
     default: ReportActionResult.NONE,
   })
   actionResult: ReportActionResult;
+
+  @Column({
+    type: 'enum',
+    enum: ReportPostAction,
+    default: ReportPostAction.NONE,
+  })
+  postAction: ReportPostAction;
 
   @Column({ type: 'text', nullable: true })
   adminMemo: string;
